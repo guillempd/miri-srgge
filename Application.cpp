@@ -1,5 +1,6 @@
 #include <GL/glew.h>
 #include <GL/glut.h>
+#include "imgui.h"
 #include "Application.h"
 
 
@@ -35,6 +36,7 @@ bool Application::update(int deltaTime)
 
 void Application::render()
 {
+	ImGui::ShowDemoWindow();
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	scene.render();
 }

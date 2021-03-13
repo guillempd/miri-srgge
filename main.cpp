@@ -1,5 +1,8 @@
 #include <GL/glew.h>
-#include <GL/glut.h>
+#include <GL/freeglut.h>
+#include "imgui.h"
+#include "imgui_impl_glut.h"
+#include "imgui_impl_opengl3.h"
 #include "Application.h"
 
 
@@ -18,6 +21,9 @@ static Application app; // This object represents our whole app
 
 static void keyboardDownCallback(unsigned char key, int x, int y)
 {
+    ImGui_ImplGLUT_KeyboardFunc(key, x, y);
+    if (ImGui::GetIO().WantCaptureKeyboard) return;
+
 	Application::instance().keyPressed(key);
 }
 
@@ -25,6 +31,9 @@ static void keyboardDownCallback(unsigned char key, int x, int y)
 
 static void keyboardUpCallback(unsigned char key, int x, int y)
 {
+    ImGui_ImplGLUT_KeyboardUpFunc(key, x, y);
+    if (ImGui::GetIO().WantCaptureKeyboard) return;
+
 	Application::instance().keyReleased(key);
 }
 
@@ -32,6 +41,9 @@ static void keyboardUpCallback(unsigned char key, int x, int y)
 
 static void specialDownCallback(int key, int x, int y)
 {
+    ImGui_ImplGLUT_SpecialFunc(key, x, y);
+    if (ImGui::GetIO().WantCaptureKeyboard) return;
+
 	Application::instance().specialKeyPressed(key);
 }
 
@@ -39,6 +51,9 @@ static void specialDownCallback(int key, int x, int y)
 
 static void specialUpCallback(int key, int x, int y)
 {
+    ImGui_ImplGLUT_SpecialFunc(key, x, y);
+    if (ImGui::GetIO().WantCaptureKeyboard) return;
+
 	Application::instance().specialKeyReleased(key);
 }
 
@@ -46,6 +61,9 @@ static void specialUpCallback(int key, int x, int y)
 
 static void motionCallback(int x, int y)
 {
+    ImGui_ImplGLUT_MotionFunc(x, y);
+    if (ImGui::GetIO().WantCaptureMouse) return;
+
 	Application::instance().mouseMove(x, y);
 }
 
@@ -53,8 +71,12 @@ static void motionCallback(int x, int y)
 
 static void mouseCallback(int button, int state, int x, int y)
 {
+    ImGui_ImplGLUT_MouseFunc(button, state, x, y);
+    if (ImGui::GetIO().WantCaptureMouse) return;
+
   int buttonId;
   
+  // FIXME: This is causing a bug when scrolling the mouse wheel: add default case to the switch
   switch(button)
   {
   case GLUT_LEFT_BUTTON:
@@ -74,16 +96,34 @@ static void mouseCallback(int button, int state, int x, int y)
 		Application::instance().mouseRelease(buttonId);
 }
 
+ // TODO: Should application handle these too?
+static void mouseWheelCallback(int button, int dir, int x, int y)
+{
+    ImGui_ImplGLUT_MouseWheelFunc(button, dir, x, y);
+}
+
 // Resizing the window calls this function
 
 static void resizeCallback(int width, int height)
 {
-  Application::instance().resize(width, height);
+    ImGui_ImplGLUT_ReshapeFunc(width, height);
+    Application::instance().resize(width, height);
 }
 
 static void drawCallback()
 {
+	// Start the Dear ImGui frame
+	ImGui_ImplOpenGL3_NewFrame();
+	ImGui_ImplGLUT_NewFrame();
+
+	// Render the application frame (including calls to Dear ImGui)
 	Application::instance().render();
+
+	// Render the Dear ImGui frame (with the calls to Dear ImGui that the applcation has made)
+	ImGui::Render();
+	ImGuiIO& io = ImGui::GetIO();
+	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    
 	glutSwapBuffers();
 }
 
@@ -120,7 +160,21 @@ int main(int argc, char **argv)
 	glutSpecialFunc(specialDownCallback);
 	glutSpecialUpFunc(specialUpCallback);
 	glutMouseFunc(mouseCallback);
+    glutMouseWheelFunc(mouseWheelCallback);
 	glutMotionFunc(motionCallback);
+
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+
+    // // Setup Dear ImGui style
+    ImGui::StyleColorsDark();
+    // //ImGui::StyleColorsClassic();
+
+    // Setup Platform/Renderer backends
+    ImGui_ImplGLUT_Init();
+	ImGui_ImplOpenGL3_Init();
 
 	// GLEW will take care of OpenGL extension functions
 	glewExperimental = GL_TRUE;
@@ -134,8 +188,10 @@ int main(int argc, char **argv)
 	// GLUT gains control of the application
 	glutMainLoop();
 
+	// Dear ImGui cleanup
+	ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGLUT_Shutdown();
+    ImGui::DestroyContext();
+
 	return 0;
 }
-
-
-

@@ -1,0 +1,2 @@
+13/03/2021: Fix scroll wheel bug
+13/03/2021: Fix bug that happens when closing the app with Esc
