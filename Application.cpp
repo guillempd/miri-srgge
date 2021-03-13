@@ -1,6 +1,9 @@
 #include <GL/glew.h>
 #include <GL/glut.h>
+
+#include <string>
 #include "imgui.h"
+
 #include "Application.h"
 
 void Application::init()
@@ -19,6 +22,9 @@ void Application::init()
     mouseButtons[0] = false;
     mouseButtons[1] = false;
     lastMousePos = glm::ivec2(-1, -1);
+    frameCount = 0;
+    accumulatedDeltaTime = 0;
+    frameRate = 0.0f;
 }
 
 bool Application::loadMesh(const char *filename)
@@ -29,15 +35,30 @@ bool Application::loadMesh(const char *filename)
 bool Application::update(int deltaTime)
 {
     scene.update(deltaTime);
-
+    updateFrameRate(deltaTime);
     return bPlay;
+}
+
+void Application::updateFrameRate(int deltaTime)
+{
+    ++frameCount;
+    accumulatedDeltaTime += deltaTime;
+    if (frameCount == FRAMES_TO_COUNT)
+    {
+        frameRate = (1000.0f * FRAMES_TO_COUNT)/accumulatedDeltaTime;
+        frameCount = 0;
+        accumulatedDeltaTime = 0;
+    }
 }
 
 void Application::render()
 {
-    ImGui::ShowDemoWindow();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     scene.render();
+    
+    if(ImGui::Begin("Frame Rate"))
+        ImGui::Text((std::to_string(frameRate) + std::string("fps")).c_str());
+    ImGui::End();
 }
 
 void Application::resize(int width, int height)

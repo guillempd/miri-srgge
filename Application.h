@@ -38,6 +38,8 @@ public:
     bool getSpecialKey(int key) const;
 
 private:
+
+    void updateFrameRate(int deltaTime);
     bool bPlay;						  // Continue?
     Scene scene;					  // Scene to render
     bool keys[256], specialKeys[256]; // Store key states so that
@@ -47,6 +49,11 @@ private:
     bool mouseButtons[3];	 // State of mouse buttons
 
     bool bPolygonFill; // Draw filled faces or wireframe
+
+    int frameCount; // Number of frames since the start of the application (modulo 100)
+    int accumulatedDeltaTime;
+    float frameRate;
+    const int FRAMES_TO_COUNT = 8;
 };
 
 #endif // _APPLICATION_INCLUDE
