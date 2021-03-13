@@ -1,8 +1,10 @@
 #include <GL/glew.h>
 #include <GL/freeglut.h>
+
 #include "imgui.h"
 #include "imgui_impl_glut.h"
 #include "imgui_impl_opengl3.h"
+
 #include "Application.h"
 
 //Remove console (only works in Visual Studio)
@@ -11,70 +13,57 @@
 #define TIME_PER_FRAME 1000.f/60.f // Approx. 60 fps
 
 static int prevTime;
-static Application app; // This object represents our whole app
 
 // If a key is pressed this callback is called
-
 static void keyboardDownCallback(unsigned char key, int x, int y)
 {
     ImGui_ImplGLUT_KeyboardFunc(key, x, y);
-    if (ImGui::GetIO().WantCaptureKeyboard)
-        return;
+    if (ImGui::GetIO().WantCaptureKeyboard) return;
 
     Application::instance().keyPressed(key);
 }
 
 // If a key is released this callback is called
-
 static void keyboardUpCallback(unsigned char key, int x, int y)
 {
     ImGui_ImplGLUT_KeyboardUpFunc(key, x, y);
-    if (ImGui::GetIO().WantCaptureKeyboard)
-        return;
+    if (ImGui::GetIO().WantCaptureKeyboard) return;
 
     Application::instance().keyReleased(key);
 }
 
 // If a special key is pressed this callback is called
-
 static void specialDownCallback(int key, int x, int y)
 {
     ImGui_ImplGLUT_SpecialFunc(key, x, y);
-    if (ImGui::GetIO().WantCaptureKeyboard)
-        return;
+    if (ImGui::GetIO().WantCaptureKeyboard) return;
 
     Application::instance().specialKeyPressed(key);
 }
 
 // If a special key is released this callback is called
-
 static void specialUpCallback(int key, int x, int y)
 {
     ImGui_ImplGLUT_SpecialFunc(key, x, y);
-    if (ImGui::GetIO().WantCaptureKeyboard)
-        return;
+    if (ImGui::GetIO().WantCaptureKeyboard) return;
 
     Application::instance().specialKeyReleased(key);
 }
 
 // Same for changes in mouse cursor position
-
 static void motionCallback(int x, int y)
 {
     ImGui_ImplGLUT_MotionFunc(x, y);
-    if (ImGui::GetIO().WantCaptureMouse)
-        return;
+    if (ImGui::GetIO().WantCaptureMouse) return;
 
     Application::instance().mouseMove(x, y);
 }
 
 // Same for mouse button presses or releases
-
 static void mouseCallback(int button, int state, int x, int y)
 {
     ImGui_ImplGLUT_MouseFunc(button, state, x, y);
-    if (ImGui::GetIO().WantCaptureMouse)
-        return;
+    if (ImGui::GetIO().WantCaptureMouse) return;
 
     int buttonId;
 
@@ -105,7 +94,6 @@ static void mouseWheelCallback(int button, int dir, int x, int y)
 }
 
 // Resizing the window calls this function
-
 static void resizeCallback(int width, int height)
 {
     ImGui_ImplGLUT_ReshapeFunc(width, height);
@@ -123,7 +111,6 @@ static void drawCallback()
 
     // Render the Dear ImGui frame (with the calls to Dear ImGui that the applcation has made)
     ImGui::Render();
-    ImGuiIO &io = ImGui::GetIO();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
     glutSwapBuffers();
@@ -166,13 +153,9 @@ int main(int argc, char **argv)
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-    ImGuiIO &io = ImGui::GetIO();
-    (void)io;
-    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
 
-    // // Setup Dear ImGui style
-    ImGui::StyleColorsDark();
-    // //ImGui::StyleColorsClassic();
+    // Setup Dear ImGui style
+    ImGui::StyleColorsLight();
 
     // Setup Platform/Renderer backends
     ImGui_ImplGLUT_Init();
