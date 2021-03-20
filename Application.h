@@ -50,10 +50,10 @@ private:
 
     bool bPolygonFill; // Draw filled faces or wireframe
 
-    int frameCount; // Number of frames since the start of the application (modulo 100)
+    const int FRAMES_TO_COUNT = 8;
+    int frameCount; // Number of frames since the start of the application (modulo FRAMES_TO_COUNT)
     int accumulatedDeltaTime;
     float frameRate;
-    const int FRAMES_TO_COUNT = 8;
 };
 
 #endif // _APPLICATION_INCLUDE
