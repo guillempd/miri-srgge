@@ -124,8 +124,7 @@ static void idleCallback()
     if (deltaTime > TIME_PER_FRAME)
     {
         // Every time we enter here is equivalent to a game loop execution
-        if (!Application::instance().update(deltaTime))
-            exit(0); // FIXME: This is causing some incorrect closing
+        if (!Application::instance().update(deltaTime)) glutLeaveMainLoop();
         prevTime = currentTime;
         glutPostRedisplay();
     }
