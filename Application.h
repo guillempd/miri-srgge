@@ -46,7 +46,7 @@ private:
                                       // we can have access at any time
 
     glm::ivec2 lastMousePos; // Last Mouse position
-    bool mouseButtons[3];	 // State of mouse buttons
+    bool mouseButtons[5];	 // State of mouse buttons
 
     bool bPolygonFill; // Draw filled faces or wireframe
 

@@ -12,6 +12,9 @@
 
 #define TIME_PER_FRAME 1000.f/60.f // Approx. 60 fps
 
+#define GLUT_SCROLL_UP      0x0003
+#define GLUT_SCROLL_DOWN    0x0004
+
 static int prevTime;
 
 // If a key is pressed this callback is called
@@ -62,12 +65,13 @@ static void motionCallback(int x, int y)
 // Same for mouse button presses or releases
 static void mouseCallback(int button, int state, int x, int y)
 {
-    ImGui_ImplGLUT_MouseFunc(button, state, x, y);
+    if (button == GLUT_SCROLL_UP) ImGui_ImplGLUT_MouseWheelFunc(button, 1, x, y);
+    else if (button == GLUT_SCROLL_DOWN) ImGui_ImplGLUT_MouseWheelFunc(button, -1, x, y);
+    else ImGui_ImplGLUT_MouseFunc(button, state, x, y);
     if (ImGui::GetIO().WantCaptureMouse) return;
 
     int buttonId;
 
-    // FIXME: This is causing a bug when scrolling the mouse wheel: add default case to the switch
     switch (button)
     {
     case GLUT_LEFT_BUTTON:
@@ -79,18 +83,18 @@ static void mouseCallback(int button, int state, int x, int y)
     case GLUT_MIDDLE_BUTTON:
         buttonId = 2;
         break;
+    case GLUT_SCROLL_UP:
+        buttonId = 3;
+        break;
+    case GLUT_SCROLL_DOWN:
+        buttonId = 4;
+        break;
     }
 
     if (state == GLUT_DOWN)
         Application::instance().mousePress(buttonId);
     else if (state == GLUT_UP)
         Application::instance().mouseRelease(buttonId);
-}
-
-// TODO: Should application handle these too?
-static void mouseWheelCallback(int button, int dir, int x, int y)
-{
-    ImGui_ImplGLUT_MouseWheelFunc(button, dir, x, y);
 }
 
 // Resizing the window calls this function
@@ -147,7 +151,6 @@ int main(int argc, char **argv)
     glutSpecialFunc(specialDownCallback);
     glutSpecialUpFunc(specialUpCallback);
     glutMouseFunc(mouseCallback);
-    glutMouseWheelFunc(mouseWheelCallback);
     glutMotionFunc(motionCallback);
 
     IMGUI_CHECKVERSION();

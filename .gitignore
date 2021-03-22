@@ -1,3 +1,5 @@
 /build
 /models
 *.pdf
+/.vscode
+imgui.ini
