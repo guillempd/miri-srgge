@@ -54,6 +54,8 @@ private:
     int frameCount; // Number of frames since the start of the application (modulo FRAMES_TO_COUNT)
     int accumulatedDeltaTime;
     float frameRate;
+
+    int copies;
 };
 
 #endif // _APPLICATION_INCLUDE

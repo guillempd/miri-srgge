@@ -22,9 +22,12 @@ void Application::init()
     mouseButtons[0] = false;
     mouseButtons[1] = false;
     lastMousePos = glm::ivec2(-1, -1);
+
     frameCount = 0;
     accumulatedDeltaTime = 0;
     frameRate = 0.0f;
+
+    copies = 1;
 }
 
 bool Application::loadMesh(const char *filename)
@@ -54,11 +57,16 @@ void Application::updateFrameRate(int deltaTime)
 void Application::render()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    scene.render();
+    scene.render(copies);
     
     if(ImGui::Begin("Frame Rate"))
         ImGui::Text((std::to_string(frameRate) + std::string("fps")).c_str());
     ImGui::End();
+
+    if (ImGui::Begin("Copies"))
+        ImGui::Text(std::to_string(copies).c_str());
+    ImGui::End();
+    // ImGui::ShowDemoWindow();
 }
 
 void Application::resize(int width, int height)
@@ -76,6 +84,7 @@ void Application::keyPressed(int key)
 
 void Application::keyReleased(int key)
 {
+    if ('1' <= key && key <= '9') copies = key - '0';
     keys[key] = false;
 }
 

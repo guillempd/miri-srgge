@@ -19,7 +19,7 @@ public:
     void init();
     bool loadMesh(const char *filename);
     void update(int deltaTime);
-    void render();
+    void render(int n);
 
     Camera &getCamera();
 
@@ -28,6 +28,8 @@ public:
 private:
     void initShaders();
     void computeModelViewMatrix();
+
+    void render(int i, int j, const glm::mat4 &cameraModelView);
 
 private:
     Camera camera;

@@ -47,16 +47,11 @@ void Scene::update(int deltaTime)
     currentTime += deltaTime;
 }
 
-void Scene::render()
+void Scene::render(int n)
 {
-    glm::mat3 normalMatrix;
-
+    glm::mat4 &cameraModelView = camera.getModelViewMatrix();
     basicProgram.use();
     basicProgram.setUniformMatrix4f("projection", camera.getProjectionMatrix());
-    basicProgram.setUniformMatrix4f("modelview", camera.getModelViewMatrix());
-    normalMatrix = glm::inverseTranspose(camera.getModelViewMatrix());
-    basicProgram.setUniformMatrix3f("normalMatrix", normalMatrix);
-
     basicProgram.setUniform1i("bLighting", bPolygonFill ? 1 : 0);
     if (bPolygonFill)
     {
@@ -69,11 +64,24 @@ void Scene::render()
         glEnable(GL_POLYGON_OFFSET_FILL);
         glPolygonOffset(0.5f, 1.0f);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        mesh->render();
+        for (int i = 0; i < n; ++i)
+            for (int j = 0; j < n; ++j)
+                render(i, j, cameraModelView);
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         glDisable(GL_POLYGON_OFFSET_FILL);
         basicProgram.setUniform4f("color", 0.0f, 0.0f, 0.0f, 1.0f);
     }
+    for (int i = 0; i < n; ++i)
+        for (int j = 0; j < n; ++j)
+            render(i, j, cameraModelView);            
+}
+
+void Scene::render(int i, int j, const glm::mat4 &cameraModelView )
+{
+    glm::mat4 modelView = glm::translate(cameraModelView, glm::vec3(2*i, 0, -2*j));
+    glm::mat3 normalMatrix = glm::mat3(glm::inverseTranspose(modelView));
+    basicProgram.setUniformMatrix4f("modelview", modelView);
+    basicProgram.setUniformMatrix3f("normalMatrix", normalMatrix);
     mesh->render();
 }
 
