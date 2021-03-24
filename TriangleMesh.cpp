@@ -1,8 +1,4 @@
-#include <iostream>
-#include <vector>
 #include "TriangleMesh.h"
-
-using namespace std;
 
 TriangleMesh::TriangleMesh()
 {
@@ -48,7 +44,7 @@ void TriangleMesh::buildCube()
 
 void TriangleMesh::sendToOpenGL(ShaderProgram &program)
 {
-    vector<float> data;
+    std::vector<float> data;
 
     for (unsigned int tri = 0; tri < triangles.size(); tri += 3)
     {

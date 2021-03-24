@@ -5,8 +5,6 @@
 #include <GL/glew.h>
 #include <GL/gl.h>
 
-using namespace std;
-
 enum ShaderType
 {
     VERTEX_SHADER,
@@ -24,21 +22,21 @@ public:
     Shader();
 
     // These methods should be called with an active OpenGL context
-    void initFromSource(const ShaderType type, const string &source);
-    bool initFromFile(const ShaderType type, const string &filename);
+    void initFromSource(const ShaderType type, const std::string &source);
+    bool initFromFile(const ShaderType type, const std::string &filename);
     void free();
 
     GLuint getId() const;
     bool isCompiled() const;
-    const string &log() const;
+    const std::string &log() const;
 
 private:
-    bool loadShaderSource(const string &filename, string &shaderSource);
+    bool loadShaderSource(const std::string &filename, std::string &shaderSource);
 
 private:
     GLuint shaderId;
     bool compiled;
-    string errorLog;
+    std::string errorLog;
 };
 
 #endif // _SHADER_INCLUDE

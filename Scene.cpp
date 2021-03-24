@@ -1,8 +1,9 @@
 #include <iostream>
-#include <cmath>
+
 #define GLM_FORCE_RADIANS
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
+
 #include "Scene.h"
 #include "PLYReader.h"
 
@@ -102,16 +103,14 @@ void Scene::initShaders()
     vShader.initFromFile(VERTEX_SHADER, "shaders/basic.vert");
     if (!vShader.isCompiled())
     {
-        cout << "Vertex Shader Error" << endl;
-        cout << "" << vShader.log() << endl
-             << endl;
+        std::cout << "Vertex Shader Error" << std::endl;
+        std::cout << "" << vShader.log() << std::endl << std::endl;
     }
     fShader.initFromFile(FRAGMENT_SHADER, "shaders/basic.frag");
     if (!fShader.isCompiled())
     {
-        cout << "Fragment Shader Error" << endl;
-        cout << "" << fShader.log() << endl
-             << endl;
+        std::cout << "Fragment Shader Error" << std::endl;
+        std::cout << "" << fShader.log() << std::endl << std::endl;
     }
     basicProgram.init();
     basicProgram.addShader(vShader);
@@ -119,9 +118,8 @@ void Scene::initShaders()
     basicProgram.link();
     if (!basicProgram.isLinked())
     {
-        cout << "Shader Linking Error" << endl;
-        cout << "" << basicProgram.log() << endl
-             << endl;
+        std::cout << "Shader Linking Error" << std::endl;
+        std::cout << "" << basicProgram.log() << std::endl << std::endl;
     }
     basicProgram.bindFragmentOutput("outColor");
     vShader.free();

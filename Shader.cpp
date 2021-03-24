@@ -1,7 +1,5 @@
-#include <fstream>
 #include "Shader.h"
-
-using namespace std;
+#include <fstream>
 
 Shader::Shader()
 {
@@ -9,7 +7,7 @@ Shader::Shader()
     compiled = false;
 }
 
-void Shader::initFromSource(const ShaderType type, const string &source)
+void Shader::initFromSource(const ShaderType type, const std::string &source)
 {
     const char *sourcePtr = source.c_str();
     GLint status;
@@ -34,9 +32,9 @@ void Shader::initFromSource(const ShaderType type, const string &source)
     errorLog.assign(buffer);
 }
 
-bool Shader::initFromFile(const ShaderType type, const string &filename)
+bool Shader::initFromFile(const ShaderType type, const std::string &filename)
 {
-    string shaderSource;
+    std::string shaderSource;
 
     if (!loadShaderSource(filename, shaderSource))
         return false;
@@ -62,19 +60,19 @@ bool Shader::isCompiled() const
     return compiled;
 }
 
-const string &Shader::log() const
+const std::string &Shader::log() const
 {
     return errorLog;
 }
 
-bool Shader::loadShaderSource(const string &filename, string &shaderSource)
+bool Shader::loadShaderSource(const std::string &filename, std::string &shaderSource)
 {
-    ifstream fin;
+    std::ifstream fin;
 
     fin.open(filename.c_str());
     if (!fin.is_open())
         return false;
-    shaderSource.assign(istreambuf_iterator<char>(fin), istreambuf_iterator<char>());
+    shaderSource.assign(std::istreambuf_iterator<char>(fin), std::istreambuf_iterator<char>());
 
     return true;
 }

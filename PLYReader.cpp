@@ -1,14 +1,16 @@
-#include <iostream>
-#include <cstring>
-#include <vector>
 #include "PLYReader.h"
 
-bool PLYReader::readMesh(const string &filename, TriangleMesh &mesh)
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <vector>
+
+bool PLYReader::readMesh(const std::string &filename, TriangleMesh &mesh)
 {
-    ifstream fin;
+    std::ifstream fin;
     int nVertices, nFaces;
 
-    fin.open(filename.c_str(), ios_base::in | ios_base::binary);
+    fin.open(filename.c_str(), std::ios_base::in | std::ios_base::binary);
     if (!fin.is_open())
         return false;
     if (!loadHeader(fin, nVertices, nFaces))
@@ -17,8 +19,8 @@ bool PLYReader::readMesh(const string &filename, TriangleMesh &mesh)
         return false;
     }
 
-    vector<float> plyVertices;
-    vector<int> plyTriangles;
+    std::vector<float> plyVertices;
+    std::vector<int> plyTriangles;
 
     loadVertices(fin, nVertices, plyVertices);
     loadFaces(fin, nFaces, plyTriangles);
@@ -30,7 +32,7 @@ bool PLYReader::readMesh(const string &filename, TriangleMesh &mesh)
     return true;
 }
 
-bool PLYReader::loadHeader(ifstream &fin, int &nVertices, int &nFaces)
+bool PLYReader::loadHeader(std::ifstream &fin, int &nVertices, int &nFaces)
 {
     char line[100];
 
@@ -49,15 +51,15 @@ bool PLYReader::loadHeader(ifstream &fin, int &nVertices, int &nFaces)
     }
     if (nVertices <= 0)
         return false;
-    cout << "Loading triangle mesh" << endl;
-    cout << "\tVertices = " << nVertices << endl;
-    cout << "\tFaces = " << nFaces << endl;
-    cout << endl;
+    std::cout << "Loading triangle mesh" << std::endl;
+    std::cout << "\tVertices = " << nVertices << std::endl;
+    std::cout << "\tFaces = " << nFaces << std::endl;
+    std::cout << std::endl;
 
     return true;
 }
 
-void PLYReader::loadVertices(ifstream &fin, int nVertices, vector<float> &plyVertices)
+void PLYReader::loadVertices(std::ifstream &fin, int nVertices, std::vector<float> &plyVertices)
 {
     int i;
     float value;
@@ -73,7 +75,7 @@ void PLYReader::loadVertices(ifstream &fin, int nVertices, vector<float> &plyVer
     }
 }
 
-void PLYReader::loadFaces(ifstream &fin, int nFaces, vector<int> &plyTriangles)
+void PLYReader::loadFaces(std::ifstream &fin, int nFaces, std::vector<int> &plyTriangles)
 {
     int i, tri[3];
     unsigned char nVrtxPerFace;
@@ -98,7 +100,7 @@ void PLYReader::loadFaces(ifstream &fin, int nFaces, vector<int> &plyTriangles)
     }
 }
 
-void PLYReader::rescaleModel(vector<float> &plyVertices)
+void PLYReader::rescaleModel(std::vector<float> &plyVertices)
 {
     unsigned int i;
     glm::vec3 center(0.0f, 0.0f, 0.0f), size[2];
@@ -108,16 +110,16 @@ void PLYReader::rescaleModel(vector<float> &plyVertices)
     for (i = 0; i < plyVertices.size(); i += 3)
     {
         center += glm::vec3(plyVertices[i], plyVertices[i + 1], plyVertices[i + 2]);
-        size[0][0] = min(size[0][0], plyVertices[i]);
-        size[0][1] = min(size[0][1], plyVertices[i + 1]);
-        size[0][2] = min(size[0][2], plyVertices[i + 2]);
-        size[1][0] = max(size[1][0], plyVertices[i]);
-        size[1][1] = max(size[1][1], plyVertices[i + 1]);
-        size[1][2] = max(size[1][2], plyVertices[i + 2]);
+        size[0][0] = std::min(size[0][0], plyVertices[i]);
+        size[0][1] = std::min(size[0][1], plyVertices[i + 1]);
+        size[0][2] = std::min(size[0][2], plyVertices[i + 2]);
+        size[1][0] = std::max(size[1][0], plyVertices[i]);
+        size[1][1] = std::max(size[1][1], plyVertices[i + 1]);
+        size[1][2] = std::max(size[1][2], plyVertices[i + 2]);
     }
     center /= plyVertices.size() / 3;
 
-    float largestSize = max(size[1][0] - size[0][0], max(size[1][1] - size[0][1], size[1][2] - size[0][2]));
+    float largestSize = std::max(size[1][0] - size[0][0], std::max(size[1][1] - size[0][1], size[1][2] - size[0][2]));
 
     for (i = 0; i < plyVertices.size(); i += 3)
     {
@@ -127,7 +129,7 @@ void PLYReader::rescaleModel(vector<float> &plyVertices)
     }
 }
 
-void PLYReader::addModelToMesh(const vector<float> &plyVertices, const vector<int> &plyTriangles, TriangleMesh &mesh)
+void PLYReader::addModelToMesh(const std::vector<float> &plyVertices, const std::vector<int> &plyTriangles, TriangleMesh &mesh)
 {
     unsigned int i;
 

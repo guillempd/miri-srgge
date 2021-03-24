@@ -1,12 +1,9 @@
 #ifndef _TRIANGLE_MESH_INCLUDE
 #define _TRIANGLE_MESH_INCLUDE
 
-#include <string>
 #include <vector>
 #include <glm/glm.hpp>
 #include "ShaderProgram.h"
-
-using namespace std;
 
 // Class TriangleMesh renders a very simple room with textures
 
@@ -26,8 +23,8 @@ public:
     void free();
 
 private:
-    vector<glm::vec3> vertices;
-    vector<int> triangles;
+    std::vector<glm::vec3> vertices;
+    std::vector<int> triangles;
 
     GLuint vao;
     GLuint vbo;

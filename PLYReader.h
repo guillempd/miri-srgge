@@ -2,22 +2,23 @@
 #define PLYREADER_H
 
 #include <fstream>
-#include "TriangleMesh.h"
+#include <string>
+#include <vector>
 
-using namespace std;
+#include "TriangleMesh.h"
 
 class PLYReader
 {
 
 public:
-    static bool readMesh(const string &filename, TriangleMesh &mesh);
+    static bool readMesh(const std::string &filename, TriangleMesh &mesh);
 
 private:
-    static bool loadHeader(ifstream &fin, int &nVertices, int &nFaces);
-    static void loadVertices(ifstream &fin, int nVertices, vector<float> &plyVertices);
-    static void loadFaces(ifstream &fin, int nFaces, vector<int> &plyTriangles);
-    static void rescaleModel(vector<float> &plyVertices);
-    static void addModelToMesh(const vector<float> &plyVertices, const vector<int> &plyTriangles, TriangleMesh &mesh);
+    static bool loadHeader(std::ifstream &fin, int &nVertices, int &nFaces);
+    static void loadVertices(std::ifstream &fin, int nVertices, std::vector<float> &plyVertices);
+    static void loadFaces(std::ifstream &fin, int nFaces, std::vector<int> &plyTriangles);
+    static void rescaleModel(std::vector<float> &plyVertices);
+    static void addModelToMesh(const std::vector<float> &plyVertices, const std::vector<int> &plyTriangles, TriangleMesh &mesh);
 };
 
 #endif // PLYREADER_H
