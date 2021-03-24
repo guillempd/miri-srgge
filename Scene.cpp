@@ -50,9 +50,11 @@ void Scene::update(int deltaTime)
 
 void Scene::render(int n)
 {
-    glm::mat4 &cameraModelView = camera.getModelViewMatrix();
+    const glm::mat4 &viewMatrix = camera.getViewMatrix();
+    const glm::mat4 &projectionMatrix = camera.getProjectionMatrix();
     basicProgram.use();
-    basicProgram.setUniformMatrix4f("projection", camera.getProjectionMatrix());
+    basicProgram.setUniformMatrix4f("view", viewMatrix);
+    basicProgram.setUniformMatrix4f("projection", projectionMatrix);
     basicProgram.setUniform1i("bLighting", bPolygonFill ? 1 : 0);
     if (bPolygonFill)
     {
@@ -67,22 +69,25 @@ void Scene::render(int n)
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         for (int i = 0; i < n; ++i)
             for (int j = 0; j < n; ++j)
-                render(i, j, cameraModelView);
+                render(i, j, viewMatrix);
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         glDisable(GL_POLYGON_OFFSET_FILL);
         basicProgram.setUniform4f("color", 0.0f, 0.0f, 0.0f, 1.0f);
     }
     for (int i = 0; i < n; ++i)
         for (int j = 0; j < n; ++j)
-            render(i, j, cameraModelView);            
+            render(i, j, viewMatrix);            
 }
 
-void Scene::render(int i, int j, const glm::mat4 &cameraModelView )
+void Scene::render(int i, int j, const glm::mat4 &viewMatrix)
 {
-    glm::mat4 modelView = glm::translate(cameraModelView, glm::vec3(2*i, 0, -2*j));
-    glm::mat3 normalMatrix = glm::mat3(glm::inverseTranspose(modelView));
-    basicProgram.setUniformMatrix4f("modelview", modelView);
+    glm::mat4 modelMatrix(1.0f);
+    modelMatrix = glm::translate(modelMatrix, glm::vec3(2*i, 0, -2*j));
+    basicProgram.setUniformMatrix4f("model", modelMatrix);
+
+    glm::mat3 normalMatrix = glm::mat3(glm::inverseTranspose(viewMatrix * modelMatrix));
     basicProgram.setUniformMatrix3f("normalMatrix", normalMatrix);
+    
     mesh->render();
 }
 
@@ -100,13 +105,13 @@ void Scene::initShaders()
 {
     Shader vShader, fShader;
 
-    vShader.initFromFile(VERTEX_SHADER, "shaders/basic.vert");
+    vShader.initFromFile(VERTEX_SHADER, "shaders/basic.vs");
     if (!vShader.isCompiled())
     {
         std::cout << "Vertex Shader Error" << std::endl;
         std::cout << "" << vShader.log() << std::endl << std::endl;
     }
-    fShader.initFromFile(FRAGMENT_SHADER, "shaders/basic.frag");
+    fShader.initFromFile(FRAGMENT_SHADER, "shaders/basic.fs");
     if (!fShader.isCompiled())
     {
         std::cout << "Fragment Shader Error" << std::endl;
@@ -121,7 +126,7 @@ void Scene::initShaders()
         std::cout << "Shader Linking Error" << std::endl;
         std::cout << "" << basicProgram.log() << std::endl << std::endl;
     }
-    basicProgram.bindFragmentOutput("outColor");
+    basicProgram.bindFragmentOutput("fragColor");
     vShader.free();
     fShader.free();
 }

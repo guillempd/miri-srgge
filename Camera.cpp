@@ -45,10 +45,10 @@ void Camera::zoomCamera(float distDelta)
 
 void Camera::computeModelViewMatrix()
 {
-    modelview = glm::mat4(1.0f);
-    modelview = glm::translate(modelview, glm::vec3(0.0f, 0.0f, -distance));
-    modelview = glm::rotate(modelview, angleX / 180.f * PI, glm::vec3(1.0f, 0.0f, 0.0f));
-    modelview = glm::rotate(modelview, angleY / 180.f * PI, glm::vec3(0.0f, 1.0f, 0.0f));
+    view = glm::mat4(1.0f);
+    view = glm::translate(view, glm::vec3(0.0f, 0.0f, -distance));
+    view = glm::rotate(view, angleX / 180.f * PI, glm::vec3(1.0f, 0.0f, 0.0f));
+    view = glm::rotate(view, angleY / 180.f * PI, glm::vec3(0.0f, 1.0f, 0.0f));
 }
 
 glm::mat4 &Camera::getProjectionMatrix()
@@ -56,7 +56,7 @@ glm::mat4 &Camera::getProjectionMatrix()
     return projection;
 }
 
-glm::mat4 &Camera::getModelViewMatrix()
+glm::mat4 &Camera::getViewMatrix()
 {
-    return modelview;
+    return view;
 }

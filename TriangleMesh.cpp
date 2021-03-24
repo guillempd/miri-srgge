@@ -71,8 +71,8 @@ void TriangleMesh::sendToOpenGL(ShaderProgram &program)
     glGenBuffers(1, &vbo);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(float), &data[0], GL_STATIC_DRAW);
-    posLocation = program.bindVertexAttribute("position", 3, 6 * sizeof(float), 0);
-    normalLocation = program.bindVertexAttribute("normal", 3, 6 * sizeof(float), (void *)(3 * sizeof(float)));
+    posLocation = program.bindVertexAttribute("mPos", 3, 6 * sizeof(float), 0);
+    normalLocation = program.bindVertexAttribute("mNormal", 3, 6 * sizeof(float), (void *)(3 * sizeof(float)));
 }
 
 void TriangleMesh::render() const

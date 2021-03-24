@@ -96,7 +96,7 @@ void ShaderProgram::setUniform4f(const std::string &uniformName, float v0, float
         glUniform4f(location, v0, v1, v2, v3);
 }
 
-void ShaderProgram::setUniformMatrix3f(const std::string &uniformName, glm::mat3 &mat)
+void ShaderProgram::setUniformMatrix3f(const std::string &uniformName, const glm::mat3 &mat)
 {
     GLint location = glGetUniformLocation(programId, uniformName.c_str());
 
@@ -104,7 +104,7 @@ void ShaderProgram::setUniformMatrix3f(const std::string &uniformName, glm::mat3
         glUniformMatrix3fv(location, 1, GL_FALSE, glm::value_ptr(mat));
 }
 
-void ShaderProgram::setUniformMatrix4f(const std::string &uniformName, glm::mat4 &mat)
+void ShaderProgram::setUniformMatrix4f(const std::string &uniformName, const glm::mat4 &mat)
 {
     GLint location = glGetUniformLocation(programId, uniformName.c_str());
 

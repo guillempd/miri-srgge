@@ -32,8 +32,8 @@ public:
     void setUniform3f(const std::string &uniformName, float v0, float v1, float v2);
     void setUniform4f(const std::string &uniformName, float v0, float v1, float v2, float v3);
 
-    void setUniformMatrix3f(const std::string &uniformName, glm::mat3 &mat);
-    void setUniformMatrix4f(const std::string &uniformName, glm::mat4 &mat);
+    void setUniformMatrix3f(const std::string &uniformName, const glm::mat3 &mat);
+    void setUniformMatrix4f(const std::string &uniformName, const glm::mat4 &mat);
 
     bool isLinked();
     const std::string &log() const;

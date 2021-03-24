@@ -20,7 +20,7 @@ public:
     void zoomCamera(float distDelta);
 
     glm::mat4 &getProjectionMatrix();
-    glm::mat4 &getModelViewMatrix();
+    glm::mat4 &getViewMatrix();
 
 private:
     void computeModelViewMatrix();
@@ -28,7 +28,7 @@ private:
 private:
     float angleX, angleY, distance; // Camera parameters
     float rangeDistanceCamera[2];
-    glm::mat4 projection, modelview; // OpenGL matrices
+    glm::mat4 projection, view; // OpenGL matrices
 };
 
 #endif // _CAMERA_INCLUDE
