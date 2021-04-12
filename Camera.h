@@ -12,23 +12,30 @@ class Camera
 public:
     Camera();
     ~Camera();
-
-    void init(float initDistance, float initAngleX = 0.0f, float initAngleY = 0.0f);
-
+    void init();
+    void update(float deltaTime);
     void resizeCameraViewport(int width, int height);
     void rotateCamera(float xRotation, float yRotation);
     void zoomCamera(float distDelta);
-
     glm::mat4 &getProjectionMatrix();
     glm::mat4 &getViewMatrix();
-
 private:
-    void computeModelViewMatrix();
-
+    void moveForward(float input, float deltaTime);
+    void moveRight(float input, float deltaTime);
+    void moveUp(float input, float deltaTime);
+    void updateViewMatrix();
+    void updateLookDirection();
 private:
-    float angleX, angleY, distance; // Camera parameters
-    float rangeDistanceCamera[2];
-    glm::mat4 projection, view; // OpenGL matrices
+    glm::mat4 projection;
+    glm::mat4 view;
+    glm::vec3 position;
+    glm::vec3 forward;
+    glm::vec3 right;
+    glm::vec3 up; // TODO: make this static
+    glm::vec3 lookDirection;
+    float theta;
+    float phi;
+    float speed;
 };
 
 #endif // _CAMERA_INCLUDE

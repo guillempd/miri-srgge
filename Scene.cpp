@@ -26,7 +26,7 @@ void Scene::init()
     mesh->sendToOpenGL(basicProgram);
     currentTime = 0.0f;
 
-    camera.init(2.0f);
+    camera.init();
 
     bPolygonFill = true;
 }
@@ -46,6 +46,7 @@ bool Scene::loadMesh(const char *filename)
 void Scene::update(int deltaTime)
 {
     currentTime += deltaTime;
+    camera.update(deltaTime);
 }
 
 void Scene::render(int n)

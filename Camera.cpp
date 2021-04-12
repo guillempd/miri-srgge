@@ -1,9 +1,11 @@
 #include "Camera.h"
+#include "Application.h"
+
 #define GLM_FORCE_RADIANS
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 
-#define PI 3.14159f
+#include <iostream>
 
 Camera::Camera()
 {
@@ -13,42 +15,77 @@ Camera::~Camera()
 {
 }
 
-void Camera::init(float initDistance, float initAngleX, float initAngleY)
+void Camera::init()
 {
-    distance = initDistance;
-    angleX = initAngleX;
-    angleY = initAngleY;
-    rangeDistanceCamera[0] = 1.0f;
-    rangeDistanceCamera[1] = 3.0f;
-    computeModelViewMatrix();
+    position = glm::vec3(0.0f, 0.0f, 3.0f);
+    forward = glm::vec3(0.0f, 0.0f, -1.0f);
+    right = glm::vec3(1.0f, 0.0f, 0.0f);
+    up = glm::vec3(0.0f, 1.0f, 0.0f);
+    lookDirection = glm::vec3(0.0f, 0.0f, -1.0f);
+    theta = glm::half_pi<float>();
+    phi = 0.0f;
+    speed = 0.01f;
+    updateViewMatrix();
+}
+
+void Camera::update(float deltaTime)
+{
+    if (Application::instance().getKey('w')) moveForward(1.0f, deltaTime);
+    if (Application::instance().getKey('s')) moveForward(-1.0f, deltaTime);
+    if (Application::instance().getKey('a')) moveRight(-1.0f, deltaTime);
+    if (Application::instance().getKey('d')) moveRight(1.0f, deltaTime);
+    if (Application::instance().getKey('q')) moveUp(-1.0f, deltaTime);
+    if (Application::instance().getKey('e')) moveUp(1.0f, deltaTime);
 }
 
 void Camera::resizeCameraViewport(int width, int height)
 {
-    projection = glm::perspective(60.f / 180.f * PI, float(width) / float(height), 0.01f, 100.0f);
+    projection = glm::perspective(60.f / 180.f * glm::pi<float>(), float(width) / float(height), 0.01f, 100.0f);
 }
 
 void Camera::rotateCamera(float xRotation, float yRotation)
 {
-    angleX += xRotation;
-    angleX = glm::max(-75.0f, glm::min(angleX, 75.0f));
-    angleY += yRotation;
-    computeModelViewMatrix();
+    theta += xRotation;
+    phi += yRotation;
+    phi = glm::clamp(phi, -(glm::half_pi<float>() - 0.1f), glm::half_pi<float>() - 0.1f);
+    updateLookDirection();
 }
 
+void Camera::updateLookDirection()
+{
+    lookDirection = glm::vec3(glm::cos(phi) * glm::cos(theta) ,glm::sin(phi), -glm::cos(phi) * glm::sin(theta));
+    forward = glm::normalize(glm::vec3(lookDirection.x, 0.0f, lookDirection.z));
+    right = glm::cross(forward, up);
+    updateViewMatrix();
+}
+
+void Camera::moveForward(float input, float deltaTime)
+{
+    position += input * forward * speed * deltaTime;
+    updateViewMatrix();
+}
+
+void Camera::moveUp(float input, float deltaTime)
+{
+    position += input * up * speed * deltaTime;
+    updateViewMatrix();
+}
+
+void Camera::moveRight(float input, float deltaTime)
+{
+    position += input * right * speed * deltaTime;
+    updateViewMatrix();
+}
+
+// TODO: Implement this changing fov
 void Camera::zoomCamera(float distDelta)
 {
-    distance += distDelta;
-    distance = glm::max(rangeDistanceCamera[0], glm::min(distance, rangeDistanceCamera[1]));
-    computeModelViewMatrix();
+
 }
 
-void Camera::computeModelViewMatrix()
+void Camera::updateViewMatrix()
 {
-    view = glm::mat4(1.0f);
-    view = glm::translate(view, glm::vec3(0.0f, 0.0f, -distance));
-    view = glm::rotate(view, angleX / 180.f * PI, glm::vec3(1.0f, 0.0f, 0.0f));
-    view = glm::rotate(view, angleY / 180.f * PI, glm::vec3(0.0f, 1.0f, 0.0f));
+    view = glm::lookAt(position, position + lookDirection, up);
 }
 
 glm::mat4 &Camera::getProjectionMatrix()

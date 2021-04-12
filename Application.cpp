@@ -28,6 +28,8 @@ void Application::init()
     frameRate = 0.0f;
 
     copies = 1;
+
+    mouseSensitivity = 0.05f;
 }
 
 bool Application::loadMesh(const char *filename)
@@ -104,7 +106,7 @@ void Application::mouseMove(int x, int y)
 {
     // Rotation
     if (mouseButtons[0] && lastMousePos.x != -1)
-        scene.getCamera().rotateCamera(0.5f * (y - lastMousePos.y), 0.5f * (x - lastMousePos.x));
+        scene.getCamera().rotateCamera(-mouseSensitivity * (x - lastMousePos.x), -mouseSensitivity * (y - lastMousePos.y));
 
     // Zoom
     if (mouseButtons[1] && lastMousePos.x != -1)
