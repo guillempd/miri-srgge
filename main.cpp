@@ -7,6 +7,8 @@
 
 #include "Application.h"
 
+#include <iostream>
+
 //Remove console (only works in Visual Studio)
 #pragma comment(linker, "/subsystem:\"windows\" /entry:\"mainCRTStartup\"")
 
@@ -16,6 +18,20 @@
 #define GLUT_SCROLL_DOWN    0x0004
 
 static int prevTime;
+static bool capturingMouse;
+
+void beginCapturingMouse() {
+    capturingMouse = true;
+    int width = glutGet(GLUT_WINDOW_WIDTH);
+    int height = glutGet(GLUT_WINDOW_HEIGHT);
+    glutWarpPointer(width/2, height/2);
+    glutSetCursor(GLUT_CURSOR_NONE);
+}
+
+void endCapturingMouse() {
+    capturingMouse = false;
+    glutSetCursor(GLUT_CURSOR_INHERIT);
+}
 
 // If a key is pressed this callback is called
 static void keyboardDownCallback(unsigned char key, int x, int y)
@@ -23,6 +39,10 @@ static void keyboardDownCallback(unsigned char key, int x, int y)
     ImGui_ImplGLUT_KeyboardFunc(key, x, y);
     if (ImGui::GetIO().WantCaptureKeyboard) return;
 
+    if (key == 'i') {
+        if (capturingMouse) endCapturingMouse();
+        else beginCapturingMouse();
+    }
     Application::instance().keyPressed(key);
 }
 
@@ -56,10 +76,19 @@ static void specialUpCallback(int key, int x, int y)
 // Same for changes in mouse cursor position
 static void motionCallback(int x, int y)
 {
-    ImGui_ImplGLUT_MotionFunc(x, y);
-    if (ImGui::GetIO().WantCaptureMouse) return;
+    if (capturingMouse) return;
 
-    Application::instance().mouseMove(x, y);
+    ImGui_ImplGLUT_MotionFunc(x, y);
+}
+
+static void passiveMotionCallback(int x, int y)
+{
+    if (!capturingMouse) return;
+
+    int width = glutGet(GLUT_WINDOW_WIDTH);
+    int height = glutGet(GLUT_WINDOW_HEIGHT);
+    Application::instance().mouseMove(x - width/2, y - height/2);
+    if (x != width/2 || y != height/2) glutWarpPointer(width/2, height/2);
 }
 
 // Same for mouse button presses or releases
@@ -152,6 +181,8 @@ int main(int argc, char **argv)
     glutSpecialUpFunc(specialUpCallback);
     glutMouseFunc(mouseCallback);
     glutMotionFunc(motionCallback);
+    glutPassiveMotionFunc(passiveMotionCallback);
+    beginCapturingMouse();
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();

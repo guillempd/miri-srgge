@@ -105,8 +105,8 @@ void Application::specialKeyReleased(int key)
 void Application::mouseMove(int x, int y)
 {
     // Rotation
-    if (mouseButtons[0] && lastMousePos.x != -1)
-        scene.getCamera().rotateCamera(-mouseSensitivity * (x - lastMousePos.x), -mouseSensitivity * (y - lastMousePos.y));
+    if (lastMousePos.x != -1)
+        scene.getCamera().rotateCamera(-mouseSensitivity * x, -mouseSensitivity * y);
 
     // Zoom
     if (mouseButtons[1] && lastMousePos.x != -1)
