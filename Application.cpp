@@ -34,7 +34,13 @@ void Application::init()
 
 bool Application::loadMesh(const char *filename)
 {
-    return scene.loadMesh(filename);
+    // return scene.loadMesh(filename);
+    return true;
+}
+
+bool Application::loadScene(const char *filename)
+{
+    return scene.loadScene(filename);
 }
 
 bool Application::update(int deltaTime)

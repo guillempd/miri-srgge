@@ -2,6 +2,8 @@
 
 TriangleMesh::TriangleMesh()
 {
+    vertices = {};
+    triangles = {};
 }
 
 void TriangleMesh::addVertex(const glm::vec3 &position)

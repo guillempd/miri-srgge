@@ -28,6 +28,7 @@ void Camera::init()
     updateViewMatrix();
 }
 
+// TODO: A slight optimization could be to only perform updateViewMatrix() once here
 void Camera::update(float deltaTime)
 {
     if (Application::instance().getKey('w')) moveForward(1.0f, deltaTime);

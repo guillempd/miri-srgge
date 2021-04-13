@@ -1,46 +1,87 @@
-#include <iostream>
+#include "Scene.h"
+#include "PLYReader.h"
 
 #define GLM_FORCE_RADIANS
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 
-#include "Scene.h"
-#include "PLYReader.h"
+#include <iostream>
+#include <fstream>
+#include <string>
 
 Scene::Scene()
 {
-    mesh = NULL;
+    meshes = {};
 }
 
+// TODO: Cleanup all the meshes
 Scene::~Scene()
 {
-    if (mesh != NULL)
-        delete mesh;
+    for (auto mesh : meshes)
+        if (mesh) delete mesh;
 }
 
 void Scene::init()
 {
     initShaders();
-    mesh = new TriangleMesh();
-    mesh->buildCube();
-    mesh->sendToOpenGL(basicProgram);
+    meshes.push_back(new TriangleMesh());
+    meshes[0]->buildCube();
+    meshes[0]->sendToOpenGL(basicProgram);
+
     currentTime = 0.0f;
 
     camera.init();
 
     bPolygonFill = true;
+    
+    tilemap = {{}};
+    tile = std::vector<unsigned char>(256, 0);
 }
 
-bool Scene::loadMesh(const char *filename)
+// bool Scene::loadMesh(const char *filename)
+// {
+//     PLYReader reader;
+
+//     mesh->free();
+//     bool bSuccess = reader.readMesh(filename, *mesh);
+//     if (bSuccess)
+//         mesh->sendToOpenGL(basicProgram);
+
+//     return bSuccess;
+// }
+
+bool Scene::loadScene(const char *filename)
 {
-    PLYReader reader;
+    std::ifstream fin(filename, std::ios::in);
+    if (!fin.is_open()) return false;
 
-    mesh->free();
-    bool bSuccess = reader.readMesh(filename, *mesh);
-    if (bSuccess)
-        mesh->sendToOpenGL(basicProgram);
+    int w, h, n;
+    fin >> w >> h >> n;
 
-    return bSuccess;
+    int j = 0;
+    for (int i = 0; i < n; ++i)
+    {
+        char c;
+        std::string meshFilename;
+        fin >> c >> meshFilename;
+
+        TriangleMesh *mesh = new TriangleMesh();
+        PLYReader reader;
+        bool success = reader.readMesh(meshFilename.c_str(), *mesh);
+        if (success) 
+        {
+            mesh->sendToOpenGL(basicProgram);
+            meshes.push_back(mesh);
+            tile[c] = ++j;
+        }
+    }
+    tilemap = std::vector<std::vector<unsigned char>> (h, std::vector<unsigned char>(w));
+    for (int y = 0; y < h; ++y) {
+        for (int x = 0; x < w; ++x) {
+            fin >> tilemap[x][y];
+        }
+    }
+    return true;
 }
 
 void Scene::update(int deltaTime)
@@ -51,6 +92,8 @@ void Scene::update(int deltaTime)
 
 void Scene::render(int n)
 {
+    int h = tilemap.size();
+    int w = tilemap[0].size();
     const glm::mat4 &viewMatrix = camera.getViewMatrix();
     const glm::mat4 &projectionMatrix = camera.getProjectionMatrix();
     basicProgram.use();
@@ -68,28 +111,32 @@ void Scene::render(int n)
         glEnable(GL_POLYGON_OFFSET_FILL);
         glPolygonOffset(0.5f, 1.0f);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        for (int i = 0; i < n; ++i)
-            for (int j = 0; j < n; ++j)
-                render(i, j, viewMatrix);
+        for (int y = 0; y < h; ++y)
+            for (int x = 0; x < w; ++x)
+                render(x, y, viewMatrix);
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         glDisable(GL_POLYGON_OFFSET_FILL);
         basicProgram.setUniform4f("color", 0.0f, 0.0f, 0.0f, 1.0f);
     }
-    for (int i = 0; i < n; ++i)
-        for (int j = 0; j < n; ++j)
-            render(i, j, viewMatrix);            
+    for (int y = 0; y < h; ++y)
+        for (int x = 0; x < w; ++x)
+            render(x, y, viewMatrix);            
 }
 
-void Scene::render(int i, int j, const glm::mat4 &viewMatrix)
+void Scene::render(int x, int y, const glm::mat4 &viewMatrix)
 {
-    glm::mat4 modelMatrix(1.0f);
-    modelMatrix = glm::translate(modelMatrix, glm::vec3(2*i, 0, -2*j));
-    basicProgram.setUniformMatrix4f("model", modelMatrix);
+    unsigned char i = tile[tilemap[x][y]];
+    if (i >= 0)
+    {
+        glm::mat4 modelMatrix(1.0f);
+        modelMatrix = glm::translate(modelMatrix, glm::vec3(2*x, 0, -2*y));
+        basicProgram.setUniformMatrix4f("model", modelMatrix);
 
-    glm::mat3 normalMatrix = glm::mat3(glm::inverseTranspose(viewMatrix * modelMatrix));
-    basicProgram.setUniformMatrix3f("normalMatrix", normalMatrix);
-    
-    mesh->render();
+        glm::mat3 normalMatrix = glm::mat3(glm::inverseTranspose(viewMatrix * modelMatrix));
+        basicProgram.setUniformMatrix3f("normalMatrix", normalMatrix);
+
+        meshes[i]->render();
+    }
 }
 
 Camera &Scene::getCamera()

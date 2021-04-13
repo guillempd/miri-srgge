@@ -1,10 +1,13 @@
 #ifndef _SCENE_INCLUDE
 #define _SCENE_INCLUDE
 
-#include <glm/glm.hpp>
 #include "Camera.h"
 #include "ShaderProgram.h"
 #include "TriangleMesh.h"
+
+#include <glm/glm.hpp>
+
+#include <vector>
 
 // Scene contains all the entities of our game.
 // It is responsible for updating and render them.
@@ -18,6 +21,7 @@ public:
 
     void init();
     bool loadMesh(const char *filename);
+    bool loadScene(const char * filename);
     void update(int deltaTime);
     void render(int n);
 
@@ -33,10 +37,11 @@ private:
 
 private:
     Camera camera;
-    TriangleMesh *mesh;
+    std::vector<TriangleMesh*> meshes;
     ShaderProgram basicProgram;
     float currentTime;
-
+    std::vector<std::vector<unsigned char>> tilemap;
+    std::vector<unsigned char> tile;
     bool bPolygonFill;
 };
 
