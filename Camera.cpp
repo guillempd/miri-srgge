@@ -37,6 +37,7 @@ void Camera::update(float deltaTime)
     if (Application::instance().getKey('d')) moveRight(1.0f, deltaTime);
     if (Application::instance().getKey('q')) moveUp(-1.0f, deltaTime);
     if (Application::instance().getKey('e')) moveUp(1.0f, deltaTime);
+    updateViewMatrix();
 }
 
 void Camera::resizeCameraViewport(int width, int height)
@@ -63,19 +64,16 @@ void Camera::updateLookDirection()
 void Camera::moveForward(float input, float deltaTime)
 {
     position += input * forward * speed * deltaTime;
-    updateViewMatrix();
 }
 
 void Camera::moveUp(float input, float deltaTime)
 {
     position += input * up * speed * deltaTime;
-    updateViewMatrix();
 }
 
 void Camera::moveRight(float input, float deltaTime)
 {
     position += input * right * speed * deltaTime;
-    updateViewMatrix();
 }
 
 // TODO: Implement this changing fov

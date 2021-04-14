@@ -29,13 +29,13 @@ void Application::init()
 
     copies = 1;
 
-    mouseSensitivity = 0.05f;
+    mouseSensitivity = 0.01f;
 }
 
 bool Application::loadMesh(const char *filename)
 {
     // return scene.loadMesh(filename);
-    return true;
+    return false;
 }
 
 bool Application::loadScene(const char *filename)

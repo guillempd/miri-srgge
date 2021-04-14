@@ -55,9 +55,8 @@ bool Scene::loadScene(const char *filename)
     std::ifstream fin(filename, std::ios::in);
     if (!fin.is_open()) return false;
 
-    int w, h, n;
-    fin >> w >> h >> n;
-
+    int n;
+    fin >> n;
     int j = 0;
     for (int i = 0; i < n; ++i)
     {
@@ -75,7 +74,9 @@ bool Scene::loadScene(const char *filename)
             tile[c] = ++j;
         }
     }
-    tilemap = std::vector<std::vector<unsigned char>> (h, std::vector<unsigned char>(w));
+    int w, h;
+    fin >> w >> h;
+    tilemap = std::vector<std::vector<unsigned char>> (w, std::vector<unsigned char>(h));
     for (int y = 0; y < h; ++y) {
         for (int x = 0; x < w; ++x) {
             fin >> tilemap[x][y];
@@ -92,8 +93,8 @@ void Scene::update(int deltaTime)
 
 void Scene::render(int n)
 {
-    int h = tilemap.size();
-    int w = tilemap[0].size();
+    int w = tilemap.size();
+    int h = tilemap[0].size();
     const glm::mat4 &viewMatrix = camera.getViewMatrix();
     const glm::mat4 &projectionMatrix = camera.getProjectionMatrix();
     basicProgram.use();
@@ -111,25 +112,26 @@ void Scene::render(int n)
         glEnable(GL_POLYGON_OFFSET_FILL);
         glPolygonOffset(0.5f, 1.0f);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        for (int y = 0; y < h; ++y)
-            for (int x = 0; x < w; ++x)
+        for (int x = 0; x < w; ++x)
+            for (int y = 0; y < h; ++y)
                 render(x, y, viewMatrix);
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         glDisable(GL_POLYGON_OFFSET_FILL);
         basicProgram.setUniform4f("color", 0.0f, 0.0f, 0.0f, 1.0f);
     }
-    for (int y = 0; y < h; ++y)
-        for (int x = 0; x < w; ++x)
+    for (int x = 0; x < w; ++x)
+        for (int y = 0; y < h; ++y)
             render(x, y, viewMatrix);            
 }
 
 void Scene::render(int x, int y, const glm::mat4 &viewMatrix)
 {
-    unsigned char i = tile[tilemap[x][y]];
-    if (i >= 0)
+    unsigned char b = tilemap[x][y];
+    unsigned char i = tile[b];
+    if (i >= 0 && b != '.')
     {
         glm::mat4 modelMatrix(1.0f);
-        modelMatrix = glm::translate(modelMatrix, glm::vec3(2*x, 0, -2*y));
+        modelMatrix = glm::translate(modelMatrix, glm::vec3(x, 0, y));
         basicProgram.setUniformMatrix4f("model", modelMatrix);
 
         glm::mat3 normalMatrix = glm::mat3(glm::inverseTranspose(viewMatrix * modelMatrix));
@@ -137,6 +139,7 @@ void Scene::render(int x, int y, const glm::mat4 &viewMatrix)
 
         meshes[i]->render();
     }
+    // TODO: Render floor in any case
 }
 
 Camera &Scene::getCamera()
