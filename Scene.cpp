@@ -73,6 +73,7 @@ bool Scene::loadScene(const char *filename)
             meshes.push_back(mesh);
             tile[c] = ++j;
         }
+        else delete mesh;
     }
     int w, h;
     fin >> w >> h;

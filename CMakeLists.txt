@@ -37,5 +37,6 @@ PLYReader.h PLYReader.cpp TriangleMesh.h TriangleMesh.cpp Camera.h Camera.cpp Sc
 
 target_link_libraries(${appName} ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES} ${GLEW_LIBRARIES})
 
-
+add_executable(MeshSimplifier TriangleMesh.cpp ShaderProgram.cpp Shader.cpp PLYReader.cpp PLYWriter.cpp MeshSimplifier.cpp)
+target_link_libraries(MeshSimplifier ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES} ${GLEW_LIBRARIES})
 

@@ -5,7 +5,6 @@
 #include <glm/glm.hpp>
 #include "ShaderProgram.h"
 
-// Class TriangleMesh renders a very simple room with textures
 
 class TriangleMesh
 {
@@ -22,9 +21,10 @@ public:
     void render() const;
     void free();
 
-private:
     std::vector<glm::vec3> vertices;
     std::vector<int> triangles;
+
+private:
 
     GLuint vao;
     GLuint vbo;
