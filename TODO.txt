@@ -1,2 +1,24 @@
-13/03/2021: Configure vs code to correctly build (and debug?)
-13/03/2021: Fix scroll wheel bug
+12/04/2021: Fix issue with bloq mayus (?)
+13/04/2021: Put floor and walls for tilemap
+13/04/2021: Constraint camera position to be only be at empty tilemap positions
+
+
+
+
+28/04/2021: For each voxel
+
+Insert corners instead of vertices
+
+// For each face
+    // Compute plane
+    // Add plane to each of the vertices
+
+// Solve the system using eigen (NO INVERSE) => Jacobi Decomposition ()
+// Use Jacobi Decomposition
+// Use extra precision for solving the system
+// Be careful with coplanar faces / undetermined systems
+
+// Use vertex normals
+
+// Can compute octree more efficiently without needing to store all the vertices that fall into a cell
+// Fer cub per octree
