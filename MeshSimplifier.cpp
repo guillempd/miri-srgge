@@ -11,7 +11,7 @@
 TriangleMesh SimplifyMesh(const TriangleMesh &mesh)
 {
     TriangleMesh simplifiedMesh;
-    Octree octree;
+    Octree octree(mesh.aabb);
     std::vector<OctreeNode*> representative(mesh.vertices.size(), nullptr);
 
     // Compute representatives

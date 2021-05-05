@@ -9,6 +9,8 @@ TriangleMesh::TriangleMesh()
 void TriangleMesh::addVertex(const glm::vec3 &position)
 {
     vertices.push_back(position);
+    aabb.min = glm::min(aabb.min, position);
+    aabb.max = glm::max(aabb.max, position);
 }
 
 void TriangleMesh::addTriangle(int v0, int v1, int v2)

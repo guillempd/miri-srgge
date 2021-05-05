@@ -1,10 +1,12 @@
 #ifndef _TRIANGLE_MESH_INCLUDE
 #define _TRIANGLE_MESH_INCLUDE
 
-#include <vector>
-#include <glm/glm.hpp>
+#include "AABB.h"
 #include "ShaderProgram.h"
 
+#include <glm/glm.hpp>
+
+#include <vector>
 
 class TriangleMesh
 {
@@ -23,6 +25,8 @@ public:
 
     std::vector<glm::vec3> vertices;
     std::vector<int> triangles;
+
+    AABB aabb;
 
 private:
 

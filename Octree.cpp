@@ -2,10 +2,19 @@
 
 #include <bitset>
 
-Octree::Octree() : max_depth (6)
+Octree::Octree() : max_depth (4)
 {
-    universe.center = glm::vec3(0.0f);
-    universe.half_length = glm::vec3(0.5f);
+    center = glm::vec3(0.0f);
+    half_length = glm::vec3(0.5f);
+    root.average = glm::vec3(0.0f);
+    root.n = 0;
+    root.children = nullptr;
+}
+
+Octree::Octree(AABB aabb) : max_depth(6)
+{
+    center = (aabb.min + aabb.max)/ 2.0f;
+    half_length = (aabb.max - aabb.min) / 2.0f;
     root.average = glm::vec3(0.0f);
     root.n = 0;
     root.children = nullptr;
@@ -18,33 +27,33 @@ Octree::~Octree()
 
 OctreeNode* Octree::insert(const glm::vec3 &vertex)
 {
-    AABB current_universe = universe;
+    glm::vec3 current_center = center;
+    glm::vec3 current_half_length = half_length;
     OctreeNode *current_node = &root;
     OctreeNode *representative = current_node;
     update_node(current_node, vertex);
     for (int depth = 0; depth < max_depth; ++depth)
     {
-        AABB next_universe;
-        next_universe.half_length = current_universe.half_length / 2.0f;
-        next_universe.center = current_universe.center - next_universe.half_length;
+        glm::vec3 next_half_length = current_half_length / 2.0f;
+        glm::vec3 next_center = current_center - next_half_length;
         std::bitset<3> child_index;
-        if (vertex.x > current_universe.center.x) 
+        if (vertex.x > current_center.x) 
         {
             child_index.set(0);
-            next_universe.center.x += 2.0f * next_universe.half_length.x; 
+            next_center.x += 2.0f * next_half_length.x; 
         }
-        if (vertex.y > current_universe.center.y) 
+        if (vertex.y > current_center.y) 
         {
             child_index.set(1);
-            next_universe.center.y += 2.0f * next_universe.half_length.y;
+            next_center.y += 2.0f * next_half_length.y;
         }
-        if (vertex.z > current_universe.center.z) 
+        if (vertex.z > current_center.z) 
         {
             child_index.set(2);
-            next_universe.center.z  += 2.0f * next_universe.half_length.z;
+            next_center.z  += 2.0f * next_half_length.z;
         }
-        current_universe.center = next_universe.center;
-        current_universe.half_length = next_universe.half_length;
+        current_center = next_center;
+        current_half_length = next_half_length;
         if (!current_node->children) subdivide(current_node);
         current_node = &current_node->children->node[child_index.to_ulong()];
         representative = current_node; // TODO: Obtain multiple representatives
