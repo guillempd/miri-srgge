@@ -7,21 +7,33 @@
 
 #include <array>
 
-// Forward declarations so they can be properly defined later
 struct OctreeNode;
 struct OctreeChildren;
 
-struct OctreeNode
+struct OctreeData
 {
     glm::vec3 average;
-    int n;
+    int vertices;
+};
+
+union OctreePointer
+{
+    OctreeData *data;
     OctreeChildren *children;
+};
+
+struct OctreeNode
+{
+    OctreePointer pointer;
+    bool is_leaf;
 };
 
 struct OctreeChildren
 {
     std::array<OctreeNode, 8> node;
+    OctreeNode *parent;
 };
+
 
 class Octree 
 {
@@ -38,9 +50,12 @@ private:
     const int max_depth;
 
 private:
-    static void update_node(OctreeNode *node, const glm::vec3 &vertex);
+    static void free(OctreeNode *root);
+    static void free(OctreeChildren *children);
+    static void insert(OctreeData *&data, const glm::vec3 &vertex);
     static void subdivide(OctreeNode *node);
-    static void free(OctreeNode &node);
+    static void aggregate(OctreeChildren *children);
+    static void aggregate(OctreeData *parent, OctreeData *child);
 };
 
 #endif // OCTREE_H

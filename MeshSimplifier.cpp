@@ -35,7 +35,7 @@ TriangleMesh SimplifyMesh(const TriangleMesh &mesh)
         bool vertex_found = (simplifiedMeshVertices.find(representative[i]) != simplifiedMeshVertices.end());
         if (!vertex_found)
         {
-            simplifiedMesh.addVertex(representative[i]->average);
+            simplifiedMesh.addVertex(representative[i]->pointer.data->average);
             simplifiedMeshVertices[representative[i]] = j;
             originalToSimplifiedIndex[i] = j++;
         }
