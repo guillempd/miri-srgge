@@ -25,15 +25,14 @@ union OctreePointer
 struct OctreeNode
 {
     OctreePointer pointer;
+    OctreeNode *parent;
     bool is_leaf;
 };
 
 struct OctreeChildren
 {
     std::array<OctreeNode, 8> node;
-    OctreeNode *parent;
 };
-
 
 class Octree 
 {
@@ -42,6 +41,7 @@ public:
     Octree(AABB aabb);
     ~Octree();
     OctreeNode* insert(const glm::vec3 &vertex);
+    static glm::vec3 average(OctreeNode *node); // TODO: Make non-static (?)
 
 private:
     OctreeNode root;
@@ -54,7 +54,7 @@ private:
     static void free(OctreeChildren *children);
     static void insert(OctreeData *&data, const glm::vec3 &vertex);
     static void subdivide(OctreeNode *node);
-    static void aggregate(OctreeChildren *children);
+    static void aggregate(OctreeNode *parent, OctreeChildren *children);
     static void aggregate(OctreeData *parent, OctreeData *child);
 };
 

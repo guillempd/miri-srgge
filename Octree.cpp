@@ -12,7 +12,7 @@ Octree::Octree()
     }
 
 Octree::Octree(AABB aabb)
-    : max_depth(4)
+    : max_depth(7)
     , center((aabb.min + aabb.max)/ 2.0f)
     , half_length((aabb.max - aabb.min) / 2.0f)
     {
@@ -22,7 +22,7 @@ Octree::Octree(AABB aabb)
 
 Octree::~Octree()
 {
-    if (!root.is_leaf) free(root.pointer.children);
+    // if (!root.is_leaf) free(root.pointer.children);
 }
 
 OctreeNode* Octree::insert(const glm::vec3 &vertex) // TODO: Change representative type
@@ -70,15 +70,21 @@ void Octree::insert(OctreeData *&data, const glm::vec3 &vertex)
     }   
 }
 
-// children->parent is not null
-void Octree::aggregate(OctreeChildren *children)
+glm::vec3 Octree::average(OctreeNode *node)
 {
-    OctreeNode *parent = children->parent;
+    if (!node->is_leaf) aggregate(node, node->pointer.children);
+    return node->pointer.data->average;
+}
+
+// children->parent is not null
+void Octree::aggregate(OctreeNode *parent, OctreeChildren *children)
+{
     OctreeData *parent_data = new OctreeData {glm::vec3(0.0f), 0}; // TODO: Correctly initialize this
     parent->pointer.data = parent_data;
-    for (int i = 0; i < 8; ++i)
+    for (int i = 0; i < children->node.size(); ++i)
     {
-        aggregate(parent_data, children->node[i].pointer.data);
+        OctreeNode *child = &children->node[i];
+        aggregate(parent_data, child->pointer.data);
     }
     delete children;
 }
@@ -98,13 +104,13 @@ void Octree::aggregate(OctreeData *parent, OctreeData *child)
 // node is not null
 void Octree::subdivide(OctreeNode *node)
 {
-    OctreeChildren *children = new OctreeChildren;
-    children->parent = node;
-    node->pointer.children = children; // TODO: Correctly initialize this
-    for (int i = 0; i < 8; ++i)
+    node->pointer.children = new OctreeChildren; // TODO: Correctly initialize this
+    for (int i = 0; i < node->pointer.children->node.size(); ++i)
     {
-        children->node[i].is_leaf = true;
-        children->node[i].pointer.data = nullptr;
+        OctreeNode &child = node->pointer.children->node[i];
+        child.is_leaf = true;
+        child.pointer.data = nullptr;
+        child.parent = node;
     }
     node->is_leaf = false;
 }
@@ -120,7 +126,7 @@ void Octree::free(OctreeNode *node)
 
 void Octree::free(OctreeChildren *children)
 {
-    for (int i = 0; i < 8; ++i)
+    for (int i = 0; i < children->node.size(); ++i)
     {
         free(&children->node[i]);
     }

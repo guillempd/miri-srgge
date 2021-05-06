@@ -12,21 +12,11 @@
 #include <unordered_map>
 #include <unordered_set>
 
-// TODO: Take into account the multiple LODS
-TriangleMesh SimplifyMesh(const TriangleMesh &mesh)
+TriangleMesh ObtainLOD(const TriangleMesh &mesh, const Octree &octree, const std::vector<OctreeNode*> representative)
 {
     TriangleMesh simplifiedMesh;
-    Octree octree(mesh.aabb);
-    std::vector<OctreeNode*> representative(mesh.vertices.size(), nullptr);
-    // Compute representatives
-    for (int i = 0; i < mesh.vertices.size(); ++i)
-    {
-        glm::vec3 vertex = mesh.vertices[i];
-        representative[i] = octree.insert(vertex);
-    }
 
-    // Add representatives to simplifiedMesh
-    // If needed (QEM) compute them
+    // Add vertices to simplifiedMesh
     std::unordered_map<OctreeNode*, int> simplifiedMeshVertices;
     std::unordered_map<int, int> originalToSimplifiedIndex;
     int j = 0;
@@ -35,7 +25,7 @@ TriangleMesh SimplifyMesh(const TriangleMesh &mesh)
         bool vertex_found = (simplifiedMeshVertices.find(representative[i]) != simplifiedMeshVertices.end());
         if (!vertex_found)
         {
-            simplifiedMesh.addVertex(representative[i]->pointer.data->average);
+            simplifiedMesh.addVertex(octree.average(representative[i]));
             simplifiedMeshVertices[representative[i]] = j;
             originalToSimplifiedIndex[i] = j++;
         }
@@ -89,6 +79,33 @@ TriangleMesh SimplifyMesh(const TriangleMesh &mesh)
     return simplifiedMesh;
 }
 
+std::vector<TriangleMesh> SimplifyMesh(const TriangleMesh &mesh)
+{
+    TriangleMesh simplifiedMesh;
+    Octree octree(mesh.aabb);
+    std::vector<OctreeNode*> representative(mesh.vertices.size());
+
+    // Compute representatives
+    for (int i = 0; i < mesh.vertices.size(); ++i)
+    {
+        glm::vec3 vertex = mesh.vertices[i];
+        representative[i] = octree.insert(vertex);
+    }
+
+    std::vector<TriangleMesh> meshes; // TODO: rename to lods
+
+    for (int l = 0; l < 4; ++l)
+    {
+        meshes.push_back(ObtainLOD(mesh, octree, representative));
+        for (int i = 0; i < mesh.vertices.size(); ++i)
+        {
+            representative[i] = representative[i]->parent;
+        }
+    }
+    
+    return meshes;
+}
+
 std::string fallback_mesh_filename = "models/torus.ply";
 
 int main(int argc, char **argv)
@@ -102,8 +119,9 @@ int main(int argc, char **argv)
     TriangleMesh mesh;
     if (PLYReader::readMesh(mesh_filename, mesh))
     {
-        TriangleMesh simplifiedMesh = SimplifyMesh(mesh);
-        PLYWriter::writeMesh("test.ply", simplifiedMesh);
+        std::vector<TriangleMesh> LOD = SimplifyMesh(mesh);
+        for (int i = 0; i < LOD.size(); ++i)
+            PLYWriter::writeMesh("test" + std::to_string(i) + ".ply", LOD[i]);
     }
     else
     {
