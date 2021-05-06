@@ -1,5 +1,9 @@
 /build
 /models
 *.pdf
+*.ply
+*.txt
+*.tm
+!CMakeLists.txt
 /.vscode
 imgui.ini

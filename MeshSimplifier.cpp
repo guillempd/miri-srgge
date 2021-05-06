@@ -12,20 +12,49 @@
 #include <unordered_map>
 #include <unordered_set>
 
-TriangleMesh ObtainLOD(const TriangleMesh &mesh, const Octree &octree, const std::vector<OctreeNode*> representative)
+Plane face(const glm::vec3 &v0, const glm::vec3 &v1, const glm::vec3 &v2)
 {
-    TriangleMesh simplifiedMesh;
+    glm::vec3 u = v1 - v0;
+    glm::vec3 v = v2 - v0;
+    glm::vec3 n = glm::normalize(glm::cross(u, v));
+    float d = glm::dot(n, v0);
+    Plane result;
+    result << n.x, n.y, n.z, d; 
+    return result;
+}
 
-    // Add vertices to simplifiedMesh
+void computeRepresentatives(const TriangleMesh &originalMesh, std::vector<OctreeNode*> &representative)
+{
+    Octree octree(originalMesh.aabb);
+    for (int i = 0; i < originalMesh.triangles.size(); i += 3)
+    {
+        int i0 = originalMesh.triangles[i];
+        int i1 = originalMesh.triangles[i + 1];
+        int i2 = originalMesh.triangles[i + 2];
+
+        glm::vec3 v0 = originalMesh.vertices[i0];
+        glm::vec3 v1 = originalMesh.vertices[i1];
+        glm::vec3 v2 = originalMesh.vertices[i2];
+
+        Plane plane = face(v0, v1, v2);
+
+        representative[i0] = octree.insert(v0, plane);
+        representative[i1] = octree.insert(v1, plane);
+        representative[i2] = octree.insert(v2, plane);
+    }
+}
+
+void addVertices(const TriangleMesh &originalMesh, TriangleMesh &simplifiedMesh, std::unordered_map<int, int> &originalToSimplifiedIndex, const std::vector<OctreeNode*> &representative, bool QEM) 
+{
     std::unordered_map<OctreeNode*, int> simplifiedMeshVertices;
-    std::unordered_map<int, int> originalToSimplifiedIndex;
     int j = 0;
-    for (int i = 0; i < mesh.vertices.size(); ++i)
+    for (int i = 0; i < originalMesh.vertices.size(); ++i)
     {
         bool vertex_found = (simplifiedMeshVertices.find(representative[i]) != simplifiedMeshVertices.end());
         if (!vertex_found)
         {
-            simplifiedMesh.addVertex(octree.average(representative[i]));
+            if (QEM) simplifiedMesh.addVertex(Octree::QEM(representative[i]));
+            else simplifiedMesh.addVertex(Octree::average(representative[i]));
             simplifiedMeshVertices[representative[i]] = j;
             originalToSimplifiedIndex[i] = j++;
         }
@@ -34,25 +63,28 @@ TriangleMesh ObtainLOD(const TriangleMesh &mesh, const Octree &octree, const std
             originalToSimplifiedIndex[i] = simplifiedMeshVertices[representative[i]];
         }
     }
+}
 
-    // Add faces to simplifiedMesh
+// TODO: Add const to originalToSimplifiedMesh
+void addFaces(const TriangleMesh &originalMesh, TriangleMesh &simplifiedMesh, std::unordered_map<int, int> &originalToSimplifiedIndex)
+{
     std::unordered_set<glm::ivec3> simplifiedMeshTriangles;
-    for (int i = 0; i < mesh.triangles.size(); i += 3)
+    for (int i = 0; i < originalMesh.triangles.size(); i += 3)
     {
-        int i0 = mesh.triangles[i];
-        int i1 = mesh.triangles[i + 1];
-        int i2 = mesh.triangles[i + 2];
+        int i0 = originalMesh.triangles[i];
+        int i1 = originalMesh.triangles[i + 1];
+        int i2 = originalMesh.triangles[i + 2];
 
         int j0 = originalToSimplifiedIndex[i0];
         int j1 = originalToSimplifiedIndex[i1];
         int j2 = originalToSimplifiedIndex[i2];
 
-        // If face collapsed to edge or point skip
+        // Skip face if it collapsed to an edge or point
         if (j0 == j1) continue;
         if (j1 == j2) continue;
         if (j2 == j0) continue;
 
-        // Reorder indices so the first one is the smallest
+        // Reorder indices so that they are in "cannonical" form to be hashed
         if (j1 < j0 && j1 < j2)
         {
             int aux = j0;
@@ -76,34 +108,42 @@ TriangleMesh ObtainLOD(const TriangleMesh &mesh, const Octree &octree, const std
             simplifiedMeshTriangles.insert(triangle);
         }
     }
+}
+
+TriangleMesh ObtainQuadricErrorMethodLOD(const TriangleMesh &mesh, const std::vector<OctreeNode*> &representative)
+{
+    TriangleMesh simplifiedMesh;
+    std::unordered_map<int, int> originalToSimplifiedIndex;
+    addVertices(mesh, simplifiedMesh, originalToSimplifiedIndex, representative, true);
+    addFaces(mesh, simplifiedMesh, originalToSimplifiedIndex);
     return simplifiedMesh;
 }
 
-std::vector<TriangleMesh> SimplifyMesh(const TriangleMesh &mesh)
+TriangleMesh ObtainAverageLOD(const TriangleMesh &mesh, const std::vector<OctreeNode*> &representative)
 {
     TriangleMesh simplifiedMesh;
-    Octree octree(mesh.aabb);
-    std::vector<OctreeNode*> representative(mesh.vertices.size());
+    std::unordered_map<int, int> originalToSimplifiedIndex;
+    addVertices(mesh, simplifiedMesh, originalToSimplifiedIndex, representative, false);
+    addFaces(mesh, simplifiedMesh, originalToSimplifiedIndex);
+    return simplifiedMesh;
+}
 
-    // Compute representatives
-    for (int i = 0; i < mesh.vertices.size(); ++i)
-    {
-        glm::vec3 vertex = mesh.vertices[i];
-        representative[i] = octree.insert(vertex);
-    }
+// TODO: Specify amount of levels of detail
+std::vector<TriangleMesh> SimplifyMesh(const TriangleMesh &mesh)
+{
+    std::vector<OctreeNode*> representative(mesh.vertices.size(), nullptr);
+    computeRepresentatives(mesh, representative);
 
-    std::vector<TriangleMesh> meshes; // TODO: rename to lods
-
+    std::vector<TriangleMesh> LOD;
     for (int l = 0; l < 4; ++l)
     {
-        meshes.push_back(ObtainLOD(mesh, octree, representative));
+        LOD.push_back(ObtainAverageLOD(mesh, representative));
         for (int i = 0; i < mesh.vertices.size(); ++i)
         {
             representative[i] = representative[i]->parent;
         }
     }
-    
-    return meshes;
+    return LOD;
 }
 
 std::string fallback_mesh_filename = "models/torus.ply";

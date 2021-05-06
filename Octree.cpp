@@ -1,5 +1,6 @@
 #include "Octree.h"
 
+
 #include <bitset>
 
 Octree::Octree()
@@ -25,7 +26,7 @@ Octree::~Octree()
     // if (!root.is_leaf) free(root.pointer.children);
 }
 
-OctreeNode* Octree::insert(const glm::vec3 &vertex) // TODO: Change representative type
+OctreeNode* Octree::insert(const glm::vec3 &vertex, const Plane &face)
 {
     glm::vec3 current_center = center;
     glm::vec3 current_half_length = half_length;
@@ -55,11 +56,11 @@ OctreeNode* Octree::insert(const glm::vec3 &vertex) // TODO: Change representati
         if (current_node->is_leaf) subdivide(current_node);
         current_node = &current_node->pointer.children->node[child_index.to_ulong()];
     }
-    insert(current_node->pointer.data, vertex);
+    insert(current_node->pointer.data, vertex, face);
     return current_node;
 }
 
-void Octree::insert(OctreeData *&data, const glm::vec3 &vertex)
+void Octree::insert(OctreeData *&data, const glm::vec3 &vertex, const Plane &face)
 {
     if (!data) data = new OctreeData {vertex, 1};
     else 
@@ -67,6 +68,7 @@ void Octree::insert(OctreeData *&data, const glm::vec3 &vertex)
         float weight = float(data->vertices) / float(data->vertices + 1);
         data->average = data->average * weight + vertex * (1.0f - weight);
         data->vertices += 1;
+        data->faces.push_back(face);
     }   
 }
 
@@ -74,6 +76,13 @@ glm::vec3 Octree::average(OctreeNode *node)
 {
     if (!node->is_leaf) aggregate(node, node->pointer.children);
     return node->pointer.data->average;
+}
+
+glm::vec3 Octree::QEM(OctreeNode *node)
+{
+    if (!node->is_leaf) aggregate(node, node->pointer.children);
+    // TODO: Perform QEM computations using the list in data
+    return glm::vec3(0.0f);
 }
 
 // children->parent is not null
@@ -97,6 +106,7 @@ void Octree::aggregate(OctreeData *parent, OctreeData *child)
         float parent_weight = float(parent->vertices) / float(parent->vertices + child->vertices);
         parent->average = parent->average * parent_weight + child->average * (1.0f - parent_weight);
         parent->vertices += child->vertices;
+        parent->faces.splice(parent->faces.end(), child->faces);
         delete child;
     }
 }
@@ -104,7 +114,7 @@ void Octree::aggregate(OctreeData *parent, OctreeData *child)
 // node is not null
 void Octree::subdivide(OctreeNode *node)
 {
-    node->pointer.children = new OctreeChildren; // TODO: Correctly initialize this
+    node->pointer.children = new OctreeChildren;
     for (int i = 0; i < node->pointer.children->node.size(); ++i)
     {
         OctreeNode &child = node->pointer.children->node[i];

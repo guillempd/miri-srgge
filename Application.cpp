@@ -71,9 +71,9 @@ void Application::render()
         ImGui::Text((std::to_string(frameRate) + std::string("fps")).c_str());
     ImGui::End();
 
-    if (ImGui::Begin("Copies"))
-        ImGui::Text(std::to_string(copies).c_str());
-    ImGui::End();
+    // if (ImGui::Begin("Copies"))
+    //     ImGui::Text(std::to_string(copies).c_str());
+    // ImGui::End();
     // ImGui::ShowDemoWindow();
 }
 
