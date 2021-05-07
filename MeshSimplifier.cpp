@@ -7,10 +7,18 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/hash.hpp>
 
+#include <cstdlib>
 #include <iostream>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+
+enum SimplificationMethod
+{
+    MEAN,
+    QEM,
+    THIN_FEATURE
+};
 
 Plane face(const glm::vec3 &v0, const glm::vec3 &v1, const glm::vec3 &v2)
 {
@@ -23,7 +31,16 @@ Plane face(const glm::vec3 &v0, const glm::vec3 &v1, const glm::vec3 &v2)
     return result;
 }
 
-void computeRepresentatives(const TriangleMesh &originalMesh, Octree &octree, std::vector<OctreeNode*> &representative)
+void computeRepresentativesByVertices(const TriangleMesh &originalMesh, Octree &octree, std::vector<OctreeNode*> &representative)
+{
+    for (int i = 0; i < originalMesh.vertices.size(); ++i)
+    {
+        glm::vec3 v = originalMesh.vertices[i];
+        representative[i] = octree.insert(v, Plane(0, 0, 0, 0)); // FIXME: Inserting dummy face
+    }
+}
+
+void computeRepresentativesByCorners(const TriangleMesh &originalMesh, Octree &octree, std::vector<OctreeNode*> &representative)
 {
     for (int i = 0; i < originalMesh.triangles.size(); i += 3)
     {
@@ -43,7 +60,6 @@ void computeRepresentatives(const TriangleMesh &originalMesh, Octree &octree, st
     }
 }
 
-// TODO: Split into different add vertices for average and qem, so no points are repeated for average
 void addVertices(const TriangleMesh &originalMesh, TriangleMesh &simplifiedMesh, std::unordered_map<int, int> &originalToSimplifiedIndex, const std::vector<OctreeNode*> &representative, bool QEM) 
 {
     std::unordered_map<OctreeNode*, int> simplifiedMeshVertices;
@@ -128,17 +144,30 @@ TriangleMesh ObtainAverageLOD(const TriangleMesh &mesh, const std::vector<Octree
     return simplifiedMesh;
 }
 
-// TODO: Specify amount of levels of detail
-std::vector<TriangleMesh> SimplifyMesh(const TriangleMesh &mesh)
+std::vector<TriangleMesh> SimplifyMesh(const TriangleMesh &mesh, SimplificationMethod method, int max_depth, int lods)
 {
-    Octree octree(mesh.aabb);
+    Octree octree(mesh.aabb); // TODO: Pass in max_depth
     std::vector<OctreeNode*> representative(mesh.vertices.size(), nullptr);
-    computeRepresentatives(mesh, octree, representative);
+
+    if (method == QEM) computeRepresentativesByCorners(mesh, octree, representative);
+    else computeRepresentativesByVertices(mesh, octree, representative);
 
     std::vector<TriangleMesh> LOD;
-    for (int l = 0; l < 4; ++l)
+    for (int l = 0; l < lods; ++l)
     {
-        LOD.push_back(ObtainQuadricErrorMethodLOD(mesh, representative));
+        switch (method)
+        {
+            case QEM:
+                LOD.push_back(ObtainQuadricErrorMethodLOD(mesh, representative));
+                break;
+
+            default:
+                std::cerr << "E: Unknown simplification method, 'mean' method selected" << std::endl;
+                // Intentional fallthrough
+            case MEAN:
+                LOD.push_back(ObtainAverageLOD(mesh, representative));
+                break;
+        }
         for (int i = 0; i < mesh.vertices.size(); ++i)
         {
             representative[i] = representative[i]->parent;
@@ -147,22 +176,71 @@ std::vector<TriangleMesh> SimplifyMesh(const TriangleMesh &mesh)
     return LOD;
 }
 
-std::string fallback_mesh_filename = "models/torus.ply";
+const std::string DEFAULT_MESH = "models/bunny.ply";
+
+const SimplificationMethod DEFAULT_METHOD = MEAN;
+
+const int MIN_MAX_DEPTH = 6;
+const int MAX_MAX_DEPTH = 12;
+const int DEFAULT_MAX_DEPTH = 8;
+
+const int MIN_LODS = 1;
+const int DEFAULT_LODS = 4;
 
 int main(int argc, char **argv)
 {
-    std::string mesh_filename = fallback_mesh_filename;
+    std::string mesh_filename = DEFAULT_MESH;
     if (argc > 1)
     {
         mesh_filename = std::string(argv[1]);
     }
 
+    SimplificationMethod method = DEFAULT_METHOD;
+    if (argc > 2)
+    {
+        std::string input_method = std::string(argv[2]);
+        if (input_method == "mean") method = MEAN;
+        else if (input_method == "qem") method = QEM;
+        else
+        {
+            std::cerr << "W: Unknown simplification method." << std::endl;
+            std::cerr << "W: Available ones are: 'mean' and 'qem'" << std::endl;
+            std::cerr << "W: Defaulted to 'mean'" << std::endl;
+        }
+    }
+
+    int max_depth = DEFAULT_MAX_DEPTH;
+    if (argc > 3)
+    {
+        int input_max_depth = std::atoi(argv[3]);
+        if (MIN_MAX_DEPTH <= input_max_depth && input_max_depth <= MAX_MAX_DEPTH)
+            max_depth = input_max_depth;
+        else
+        {
+            std::cerr << "W: max_depth has to be between " << MIN_MAX_DEPTH << " and " << MAX_MAX_DEPTH << std::endl;
+            std::cerr << "W: Defaulted to " << DEFAULT_MAX_DEPTH << std::endl;
+        }
+    }
+
+    int lods = DEFAULT_LODS;
+    if (argc > 4)
+    {
+        int input_lods = std::atoi(argv[4]);
+        if (MIN_LODS <= input_lods && input_lods <= max_depth)
+            lods = input_lods;
+        else
+        {
+            std::cerr << "W: lods has to be between " << MIN_LODS << " and max_depth (" << max_depth << ")" <<  std::endl;
+            std::cerr << "W: Defaulted to " << MIN_LODS << std::endl;
+        }
+    }
+
     TriangleMesh mesh;
     if (PLYReader::readMesh(mesh_filename, mesh))
     {
-        std::vector<TriangleMesh> LOD = SimplifyMesh(mesh);
+        std::vector<TriangleMesh> LOD = SimplifyMesh(mesh, method, max_depth, lods);
         for (int i = 0; i < LOD.size(); ++i)
-            PLYWriter::writeMesh("test" + std::to_string(i) + ".ply", LOD[i]);
+            PLYWriter::writeMesh("test" + std::to_string(i) + ".ply", LOD[i]); // TODO: Change generated names
     }
     else
     {
