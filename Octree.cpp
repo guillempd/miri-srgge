@@ -29,7 +29,7 @@ Octree::~Octree()
     if (!root.is_leaf) free(root.pointer.children);
 }
 
-OctreeNode* Octree::insert(const glm::vec3 &vertex)
+OctreeNode* Octree::insert(const glm::vec3 &vertex, const Plane &face)
 {
     glm::vec3 current_center = center;
     glm::vec3 current_half_length = half_length;
@@ -59,11 +59,11 @@ OctreeNode* Octree::insert(const glm::vec3 &vertex)
         if (current_node->is_leaf) subdivide(current_node);
         current_node = &current_node->pointer.children->node[child_index.to_ulong()];
     }
-    insert(current_node->pointer.data, vertex);
+    insert(current_node->pointer.data, vertex, face);
     return current_node;
 }
 
-void Octree::insert(OctreeData *&data, const glm::vec3 &vertex)
+void Octree::insert(OctreeData *&data, const glm::vec3 &vertex, const Plane &face)
 {
     if (!data) data = new OctreeData {vertex, 1};
     else 
@@ -71,6 +71,7 @@ void Octree::insert(OctreeData *&data, const glm::vec3 &vertex)
         float weight = float(data->vertices) / float(data->vertices + 1);
         data->average = data->average * weight + vertex * (1.0f - weight);
         data->vertices += 1;
+        data->faces.push_back(face);
     }   
 }
 
@@ -83,8 +84,31 @@ glm::vec3 Octree::average(OctreeNode *node)
 glm::vec3 Octree::QEM(OctreeNode *node)
 {
     if (!node->is_leaf) aggregate(node);
-    // TODO: Perform QEM computations using the list in data
-    return glm::vec3(0.0f);
+
+    using Matrix4 = Eigen::Matrix4d;
+    using Vector4 = Eigen::Vector4d;
+    using JacobiSVD = Eigen::JacobiSVD<Matrix4>;
+
+    Matrix4 Q = Matrix4::Zero();
+    const std::list<Plane> &faces = node->pointer.data->faces;
+    for (const auto &face : faces)
+    {
+        Q += (face * face.transpose()).cast<double>();
+    }
+    Q(3,0) = 0;
+    Q(3,1) = 0;
+    Q(3,2) = 0;
+    Q(3,3) = 1;
+
+    Vector4 b(0, 0, 0, 1);
+
+    JacobiSVD svd(Q, Eigen::ComputeFullU | Eigen::ComputeFullV);
+    if (svd.rank() < 4) return average(node); // TODO: Improve this checking for rank 3 (case of edges)
+    else
+    {
+        Vector4 result = svd.solve(b);
+        return glm::vec3(result(0), result(1), result(2));
+    }
 }
 
 // !node->is_leaf
@@ -110,6 +134,7 @@ void Octree::aggregate(OctreeData *parent, OctreeData *child)
         float parent_weight = float(parent->vertices) / float(parent->vertices + child->vertices);
         parent->average = parent->average * parent_weight + child->average * (1.0f - parent_weight);
         parent->vertices += child->vertices;
+        parent->faces.splice(parent->faces.end(), child->faces);
         delete child;
     }
 }

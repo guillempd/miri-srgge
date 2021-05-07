@@ -3,12 +3,25 @@
 #include "PLYWriter.h"
 #include "TriangleMesh.h"
 
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
+#include <glm/gtx/hash.hpp>
 
 #include <iostream>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+
+Plane face(const glm::vec3 &v0, const glm::vec3 &v1, const glm::vec3 &v2)
+{
+    glm::vec3 u = v1 - v0;
+    glm::vec3 v = v2 - v0;
+    glm::vec3 n = glm::normalize(glm::cross(u, v));
+    float d = -glm::dot(v0, n);
+    Plane result;
+    result << n.x, n.y, n.z, d;
+    return result;
+}
 
 void computeRepresentatives(const TriangleMesh &originalMesh, Octree &octree, std::vector<OctreeNode*> &representative)
 {
@@ -22,12 +35,15 @@ void computeRepresentatives(const TriangleMesh &originalMesh, Octree &octree, st
         glm::vec3 v1 = originalMesh.vertices[i1];
         glm::vec3 v2 = originalMesh.vertices[i2];
 
-        representative[i0] = octree.insert(v0); // Add plane
-        representative[i1] = octree.insert(v1); // Add plane
-        representative[i2] = octree.insert(v2); // Add plane
+        Plane triangle = face(v0, v1, v2);
+
+        representative[i0] = octree.insert(v0, triangle);
+        representative[i1] = octree.insert(v1, triangle);
+        representative[i2] = octree.insert(v2, triangle);
     }
 }
 
+// TODO: Split into different add vertices for average and qem, so no points are repeated for average
 void addVertices(const TriangleMesh &originalMesh, TriangleMesh &simplifiedMesh, std::unordered_map<int, int> &originalToSimplifiedIndex, const std::vector<OctreeNode*> &representative, bool QEM) 
 {
     std::unordered_map<OctreeNode*, int> simplifiedMeshVertices;
@@ -52,6 +68,7 @@ void addVertices(const TriangleMesh &originalMesh, TriangleMesh &simplifiedMesh,
 // TODO: Add const to originalToSimplifiedMesh
 void addFaces(const TriangleMesh &originalMesh, TriangleMesh &simplifiedMesh, std::unordered_map<int, int> &originalToSimplifiedIndex)
 {
+    std::unordered_set<glm::ivec3> simplifiedMeshTriangles;
     for (int i = 0; i < originalMesh.triangles.size(); i += 3)
     {
         int i0 = originalMesh.triangles[i];
@@ -82,8 +99,14 @@ void addFaces(const TriangleMesh &originalMesh, TriangleMesh &simplifiedMesh, st
             j2 = j1;
             j1 = aux;
         }
-
-        simplifiedMesh.addTriangle(j0, j1, j2);
+        
+        glm::ivec3 triangle(j0, j1, j2);
+        bool triangle_found = (simplifiedMeshTriangles.find(triangle) != simplifiedMeshTriangles.end());
+        if (!triangle_found)
+        {
+            simplifiedMesh.addTriangle(j0, j1, j2);
+            simplifiedMeshTriangles.insert(triangle);
+        }
     }
 }
 
@@ -115,7 +138,7 @@ std::vector<TriangleMesh> SimplifyMesh(const TriangleMesh &mesh)
     std::vector<TriangleMesh> LOD;
     for (int l = 0; l < 4; ++l)
     {
-        LOD.push_back(ObtainAverageLOD(mesh, representative));
+        LOD.push_back(ObtainQuadricErrorMethodLOD(mesh, representative));
         for (int i = 0; i < mesh.vertices.size(); ++i)
         {
             representative[i] = representative[i]->parent;

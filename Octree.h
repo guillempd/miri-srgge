@@ -5,8 +5,12 @@
 
 #include <glm/glm.hpp>
 
+#include <Eigen/Eigen>
+
 #include <array>
-#include <list>
+#include <forward_list>
+
+using Plane = Eigen::Vector4f;
 
 struct OctreeNode;
 struct OctreeChildren;
@@ -15,6 +19,7 @@ struct OctreeData
 {
     glm::vec3 average;
     int vertices;
+    std::list<Plane> faces;
 };
 
 union OctreePointer
@@ -41,7 +46,7 @@ public:
     Octree();
     Octree(AABB aabb);
     ~Octree();
-    OctreeNode* insert(const glm::vec3 &vertex);
+    OctreeNode* insert(const glm::vec3 &vertex, const Plane &face);
     static glm::vec3 average(OctreeNode *node); // TODO: Make non-static (?)
     static glm::vec3 QEM(OctreeNode *node);
 
@@ -54,7 +59,7 @@ private:
 private:
     static void free(OctreeNode *root);
     static void free(OctreeChildren *children);
-    static void insert(OctreeData *&data, const glm::vec3 &vertex);
+    static void insert(OctreeData *&data, const glm::vec3 &vertex, const Plane &face);
     static void subdivide(OctreeNode *node);
     static void aggregate(OctreeNode *node);
     static void aggregate(OctreeData *parent, OctreeData *child);
