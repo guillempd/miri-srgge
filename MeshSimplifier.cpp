@@ -3,29 +3,15 @@
 #include "PLYWriter.h"
 #include "TriangleMesh.h"
 
-#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
-#include <glm/gtx/hash.hpp> // Experimental feature to provide hashing capabilities
 
 #include <iostream>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
 
-Plane face(const glm::vec3 &v0, const glm::vec3 &v1, const glm::vec3 &v2)
+void computeRepresentatives(const TriangleMesh &originalMesh, Octree &octree, std::vector<OctreeNode*> &representative)
 {
-    glm::vec3 u = v1 - v0;
-    glm::vec3 v = v2 - v0;
-    glm::vec3 n = glm::normalize(glm::cross(u, v));
-    float d = glm::dot(n, v0);
-    Plane result;
-    result << n.x, n.y, n.z, d; 
-    return result;
-}
-
-void computeRepresentatives(const TriangleMesh &originalMesh, std::vector<OctreeNode*> &representative)
-{
-    Octree octree(originalMesh.aabb);
     for (int i = 0; i < originalMesh.triangles.size(); i += 3)
     {
         int i0 = originalMesh.triangles[i];
@@ -36,11 +22,9 @@ void computeRepresentatives(const TriangleMesh &originalMesh, std::vector<Octree
         glm::vec3 v1 = originalMesh.vertices[i1];
         glm::vec3 v2 = originalMesh.vertices[i2];
 
-        Plane plane = face(v0, v1, v2);
-
-        representative[i0] = octree.insert(v0, plane);
-        representative[i1] = octree.insert(v1, plane);
-        representative[i2] = octree.insert(v2, plane);
+        representative[i0] = octree.insert(v0); // Add plane
+        representative[i1] = octree.insert(v1); // Add plane
+        representative[i2] = octree.insert(v2); // Add plane
     }
 }
 
@@ -68,7 +52,6 @@ void addVertices(const TriangleMesh &originalMesh, TriangleMesh &simplifiedMesh,
 // TODO: Add const to originalToSimplifiedMesh
 void addFaces(const TriangleMesh &originalMesh, TriangleMesh &simplifiedMesh, std::unordered_map<int, int> &originalToSimplifiedIndex)
 {
-    std::unordered_set<glm::ivec3> simplifiedMeshTriangles;
     for (int i = 0; i < originalMesh.triangles.size(); i += 3)
     {
         int i0 = originalMesh.triangles[i];
@@ -100,13 +83,7 @@ void addFaces(const TriangleMesh &originalMesh, TriangleMesh &simplifiedMesh, st
             j1 = aux;
         }
 
-        glm::ivec3 triangle(j0, j1, j2);
-        bool triangle_found = (simplifiedMeshTriangles.find(triangle) != simplifiedMeshTriangles.end());
-        if (!triangle_found)
-        {
-            simplifiedMesh.addTriangle(j0, j1, j2);
-            simplifiedMeshTriangles.insert(triangle);
-        }
+        simplifiedMesh.addTriangle(j0, j1, j2);
     }
 }
 
@@ -131,8 +108,9 @@ TriangleMesh ObtainAverageLOD(const TriangleMesh &mesh, const std::vector<Octree
 // TODO: Specify amount of levels of detail
 std::vector<TriangleMesh> SimplifyMesh(const TriangleMesh &mesh)
 {
+    Octree octree(mesh.aabb);
     std::vector<OctreeNode*> representative(mesh.vertices.size(), nullptr);
-    computeRepresentatives(mesh, representative);
+    computeRepresentatives(mesh, octree, representative);
 
     std::vector<TriangleMesh> LOD;
     for (int l = 0; l < 4; ++l)

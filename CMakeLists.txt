@@ -20,7 +20,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules" ${CMAKE_MODULE_PATH})
 find_package(OpenGL REQUIRED)
 find_package(GLUT REQUIRED)
 find_package(GLEW REQUIRED)
-find_package(Eigen3 3.3 REQUIRED NO_MODULE)
+# find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 
 include_directories(${OPENGL_INCLUDE_DIRS})
 include_directories(${GLUT_INCLUDE_DIRS})
@@ -39,5 +39,5 @@ PLYReader.h PLYReader.cpp TriangleMesh.h TriangleMesh.cpp Camera.h Camera.cpp Sc
 target_link_libraries(${appName} ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES} ${GLEW_LIBRARIES})
 
 add_executable(MeshSimplifier TriangleMesh.cpp ShaderProgram.cpp Shader.cpp PLYReader.cpp PLYWriter.cpp MeshSimplifier.cpp Octree.cpp)
-target_link_libraries(MeshSimplifier ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES} ${GLEW_LIBRARIES} Eigen3::Eigen)
+target_link_libraries(MeshSimplifier ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES} ${GLEW_LIBRARIES}) #  Eigen3::Eigen
 
