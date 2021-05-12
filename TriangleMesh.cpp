@@ -2,6 +2,7 @@
 
 TriangleMesh::TriangleMesh()
 {
+    aabb = {};
     vertices = {};
     triangles = {};
 }

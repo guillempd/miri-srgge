@@ -44,7 +44,7 @@ class Octree
 {
 public:
     Octree();
-    Octree(AABB aabb);
+    Octree(AABB aabb, int max_depth_);
     ~Octree();
     OctreeNode* insert(const glm::vec3 &vertex, const Plane &face);
     static glm::vec3 average(OctreeNode *node); // TODO: Make non-static (?)
@@ -53,7 +53,7 @@ public:
 private:
     OctreeNode root;
     glm::vec3 center;
-    glm::vec3 half_length;
+    float half_length;
     const int max_depth;
 
 private:
@@ -63,6 +63,7 @@ private:
     static void subdivide(OctreeNode *node);
     static void aggregate(OctreeNode *node);
     static void aggregate(OctreeData *parent, OctreeData *child);
+    static float compute_half_length(const AABB &aabb);
 };
 
 #endif // OCTREE_H

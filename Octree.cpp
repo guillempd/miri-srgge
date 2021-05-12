@@ -13,11 +13,11 @@ Octree::Octree()
         root.parent = nullptr;
     }
 
-Octree::Octree(AABB aabb)
+Octree::Octree(AABB aabb, int max_depth_)
     : root()
     , center((aabb.min + aabb.max)/ 2.0f)
-    , half_length((aabb.max - aabb.min) / 2.0f)
-    , max_depth(7)
+    , half_length(compute_half_length(aabb))
+    , max_depth(max_depth_)
     {
         root.is_leaf = true;
         root.pointer.data = nullptr;
@@ -32,27 +32,27 @@ Octree::~Octree()
 OctreeNode* Octree::insert(const glm::vec3 &vertex, const Plane &face)
 {
     glm::vec3 current_center = center;
-    glm::vec3 current_half_length = half_length;
+    float current_half_length = half_length;
     OctreeNode *current_node = &root;
     for (int depth = 0; depth < max_depth; ++depth)
     {
-        glm::vec3 next_half_length = current_half_length / 2.0f;
+        float next_half_length = current_half_length / 2.0f;
         glm::vec3 next_center = current_center - next_half_length;
         std::bitset<3> child_index;
         if (vertex.x > current_center.x) 
         {
             child_index.set(0);
-            next_center.x += 2.0f * next_half_length.x; 
+            next_center.x += 2.0f * next_half_length; 
         }
         if (vertex.y > current_center.y) 
         {
             child_index.set(1);
-            next_center.y += 2.0f * next_half_length.y;
+            next_center.y += 2.0f * next_half_length;
         }
         if (vertex.z > current_center.z) 
         {
             child_index.set(2);
-            next_center.z  += 2.0f * next_half_length.z;
+            next_center.z  += 2.0f * next_half_length;
         }
         current_center = next_center;
         current_half_length = next_half_length;
@@ -103,8 +103,8 @@ glm::vec3 Octree::QEM(OctreeNode *node)
     Vector4 b(0, 0, 0, 1);
 
     JacobiSVD svd(Q, Eigen::ComputeFullU | Eigen::ComputeFullV);
-    if (svd.rank() < 4) return average(node); // TODO: Improve this checking for rank 3 (case of edges)
-    else
+    //if (svd.rank() < 4) return average(node); // TODO: Improve this checking for rank 3 (case of edges)
+    //else
     {
         Vector4 result = svd.solve(b);
         return glm::vec3(result(0), result(1), result(2));
@@ -170,4 +170,11 @@ void Octree::free(OctreeChildren *children)
         free(&children->node[i]);
     }
     delete children;
+}
+
+float Octree::compute_half_length(const AABB &aabb)
+{
+    glm::vec3 length = aabb.max - aabb.min;
+    float half_length = std::max(length.x, std::max(length.y, length.z)) / 2.0f;
+    return 1.1f * half_length;
 }

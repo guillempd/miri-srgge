@@ -146,7 +146,7 @@ TriangleMesh ObtainAverageLOD(const TriangleMesh &mesh, const std::vector<Octree
 
 std::vector<TriangleMesh> SimplifyMesh(const TriangleMesh &mesh, SimplificationMethod method, int max_depth, int lods)
 {
-    Octree octree(mesh.aabb); // TODO: Pass in max_depth
+    Octree octree(mesh.aabb, max_depth); // TODO: Pass in max_depth
     std::vector<OctreeNode*> representative(mesh.vertices.size(), nullptr);
 
     if (method == QEM) computeRepresentativesByCorners(mesh, octree, representative);
