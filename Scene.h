@@ -26,7 +26,7 @@ public:
     void init();
     bool loadScene(const char * filename);
     void update(int deltaTime);
-    void render();
+    void render(bool debugColors);
 
     Camera &getCamera();
 
@@ -37,7 +37,7 @@ private:
     void loadModel(const std::string &modelDirectory, MeshLods &model);
 
     void renderWalls();
-    void renderStatues();
+    void renderStatues(bool debugColors);
     void render(const TriangleMesh &mesh, const glm::ivec2 &gridCoordinates);
 
 private:

@@ -7,6 +7,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <queue>
 #include <string>
 
 Scene::Scene()
@@ -88,7 +89,7 @@ void Scene::update(int deltaTime)
     camera.update(deltaTime);
 }
 
-void Scene::render()
+void Scene::render(bool debugColors)
 {
     const glm::mat4 &view = camera.getViewMatrix();
     const glm::mat4 &projection = camera.getProjectionMatrix();
@@ -101,14 +102,84 @@ void Scene::render()
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     
     renderWalls();
-    renderStatues();         
+    renderStatues(debugColors);         
 }
 
-// TODO: Correctly implement time critical rendering
-void Scene::renderStatues()
+static float distance(const glm::vec3 &cameraPosition, const glm::ivec2 &statuePosition)
 {
-    for (const Statue &statue : statues)
-        render(statue.meshLods.lods[0], statue.position);
+    return glm::length(cameraPosition - glm::vec3(statuePosition.x, 0.0f, statuePosition.y));
+}
+
+float delta_benefit(int lod)
+{
+    return 1.0f; // TODO: Actually implement
+}
+
+float delta_cost(int lod, const MeshLods &meshLods)
+{
+    int new_triangles = meshLods.lods[lod].triangles.size();
+    int previous_triangles = meshLods.lods[lod-1].triangles.size();
+    return new_triangles - previous_triangles;
+}
+
+// TODO: Improve by starting with the same lods as previous frame
+void Scene::renderStatues(bool debugColors)
+{
+    int n = statues.size();
+    
+    // Initially assign all statues the lowest lod
+    std::vector<int> statuesLod(n, 3); // 0 is lowest -> 4 is highest
+
+    for (int i = 0; i < n; ++i) {
+        const Statue &statue = statues[i];
+        if (distance(camera.getPosition(), statue.position) < 5.0f)
+            statuesLod[i] = 0;
+    }
+
+    // Greedy algorithm
+    // using PriorityQueue = std::priority_queue<Assignment,std::vector<Assignment>,AssignmentPriority>;
+    // PriorityQueue improvements;
+    // for (int i = 0; i < n; ++i) {
+    //     improvements.push({i, 1, delta_benefit(1), delta_cost(1, statues[i].meshLods)});
+    // }
+
+    // const float max_cost = 1.0f; // TODO: Compute this
+    // float cost = 0.0f;
+    // while (cost < max_cost && !improvements.empty()) {
+    //     Assignment assignment = improvements.top();
+    //     if (cost + assignment.cost <= max_cost) {
+    //         cost += assignment.cost;
+    //         statuesLod[assignment.index] = assignment.lod;
+    //         if (assignment.lod < 3) {
+    //             int new_lod = assignment.lod + 1; 
+    //             improvements.push({assignment.index, new_lod, delta_benefit(new_lod), delta_cost(new_lod, statues[assignment.index].meshLods)}); // Insert assignment for next lod
+    //         }
+    //     }
+    // }
+
+    // Render final assignation
+    
+    for (int i = 0; i < n; ++i) {
+        const Statue &statue = statues[i];
+        int lod = statuesLod[i];
+        if (debugColors) {
+            switch(lod) {
+                case 0:
+                    basicProgram.setUniform4f("color", 1.0f, 0.0f, 0.0f, 1.0f);
+                    break;
+                case 1:
+                    basicProgram.setUniform4f("color", 1.0f, 0.5, 0.0f, 0.0f);
+                    break;
+                case 2:
+                    basicProgram.setUniform4f("color", 1.0f, 1.0f, 0.0f, 0.0f);
+                    break; 
+                case 3:
+                    basicProgram.setUniform4f("color", 0.5f, 1.0f, 0.0f, 1.0f);
+                    break;
+            }
+        }
+        render(statue.meshLods.lods[lod], statue.position);
+    }
 }
 
 void Scene::renderWalls()

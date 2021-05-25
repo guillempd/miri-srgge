@@ -20,3 +20,20 @@ struct Statue
     const MeshLods &meshLods;
     glm::ivec2 position;
 };
+
+struct Assignment
+{
+    int index;
+    int lod;
+    float benefit;
+    float cost;
+};
+
+struct AssignmentPriority
+{
+    bool operator()(const Assignment &lhs, const Assignment &rhs) {
+        float lhs_value = lhs.benefit / lhs.cost;
+        float rhs_value = rhs.benefit / rhs.cost;
+        return lhs_value < rhs_value;
+    }
+};

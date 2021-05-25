@@ -57,6 +57,8 @@ private:
     float frameRate;
     float mouseSensitivity;
 
+    bool debugColors;
+
 };
 
 #endif // _APPLICATION_INCLUDE

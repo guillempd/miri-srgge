@@ -62,8 +62,13 @@ void Application::updateFrameRate(int deltaTime)
 
 void Application::render()
 {
+    if(ImGui::Begin("Settings")) {
+        ImGui::Checkbox("Show debug colors", &debugColors);
+    }
+    ImGui::End();
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    scene.render();
+    scene.render(debugColors);
     
     if(ImGui::Begin("Frame Rate"))
         ImGui::Text((std::to_string(frameRate) + std::string("fps")).c_str());
