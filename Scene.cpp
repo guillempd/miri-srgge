@@ -11,73 +11,75 @@
 
 Scene::Scene()
 {
-    meshes = {};
+
 }
 
 Scene::~Scene()
 {
-    for (auto mesh : meshes)
-        if (mesh) delete mesh;
+
 }
 
 void Scene::init()
 {
     initShaders();
-    meshes.push_back(new TriangleMesh());
-    meshes[0]->buildCube();
-    meshes[0]->sendToOpenGL(basicProgram);
 
     currentTime = 0.0f;
 
     camera.init();
 
     bPolygonFill = true;
-    
-    tilemap = {{}};
-    tile = std::vector<unsigned char>(256, 0);
 
     wall.buildCube();
     wall.sendToOpenGL(basicProgram);
 }
 
-// TODO: Load scene and fill models, statues and walls
 bool Scene::loadScene(const char *filename)
 {
     std::ifstream fin(filename, std::ios::in);
     if (!fin.is_open()) return false;
 
+    std::vector<int> tile(256, -1);
+
+    // Read & Load models
     int n;
     fin >> n;
-    int j = 0;
     for (int i = 0; i < n; ++i)
     {
-        char c;
-        std::string meshFilename;
-        fin >> c >> meshFilename;
-
-        TriangleMesh *mesh = new TriangleMesh();
-        PLYReader reader;
-        bool success = reader.readMesh(meshFilename.c_str(), *mesh);
-        if (success) 
-        {
-            mesh->sendToOpenGL(basicProgram);
-            meshes.push_back(mesh);
-            tile[c] = ++j;
-        }
-        else delete mesh;
+        unsigned char c;
+        std::string modelDirectory;
+        fin >> c >> modelDirectory;
+        models.emplace_back();
+        loadModel(modelDirectory, models[i]);
+        tile[c] = i;
     }
+
+    // Read & Store walls and statues
     int w, h;
     fin >> w >> h;
-    tilemap = std::vector<std::vector<unsigned char>> (w, std::vector<unsigned char>(h));
     for (int y = 0; y < h; ++y) {
         for (int x = 0; x < w; ++x) {
-            fin >> tilemap[x][y];
-            if (tilemap[x][y] == 'x') {
+            unsigned char c;
+            fin >> c;
+            if (c == 'x') {
                 walls.emplace_back(x, y);
+            }
+            else if (tile[c] >= 0) {
+                Statue statue = {models[tile[c]], glm::ivec2(x, y)};
+                statues.emplace_back(statue);
             }
         }
     }
     return true;
+}
+
+void Scene::loadModel(const std::string &modelDirectory, MeshLods &model)
+{
+    for (int i = 0; i < 4; ++i) {
+        TriangleMesh &lod = model.lods[i];
+        std::string meshFilename = modelDirectory + "/" + std::to_string(i) + ".ply";
+        PLYReader::readMesh(meshFilename, lod);
+        lod.sendToOpenGL(basicProgram);
+    }
 }
 
 void Scene::update(int deltaTime)
@@ -99,44 +101,14 @@ void Scene::render()
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     
     renderWalls();
-    renderStatues();
-    // basicProgram.setUniform1i("bLighting", bPolygonFill ? 1 : 0);
-    // if (bPolygonFill)
-    // {
-    //     basicProgram.setUniform4f("color", 0.9f, 0.9f, 0.95f, 1.0f);
-    //     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    // }
-    // else
-    // {
-    //     basicProgram.setUniform4f("color", 1.0f, 1.0f, 1.0f, 1.0f);
-    //     glEnable(GL_POLYGON_OFFSET_FILL);
-    //     glPolygonOffset(0.5f, 1.0f);
-    //     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    //     for (int x = 0; x < w; ++x)
-    //         for (int y = 0; y < h; ++y)
-    //             render(x, y, viewMatrix);
-    //     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    //     glDisable(GL_POLYGON_OFFSET_FILL);
-    //     basicProgram.setUniform4f("color", 0.0f, 0.0f, 0.0f, 1.0f);
-    // }          
+    renderStatues();         
 }
 
-// void Scene::render(int x, int y, const glm::mat4 &viewMatrix)
-// {
-//     unsigned char b = tilemap[x][y];
-//     unsigned char i = tile[b];
-//     if (i >= 0 && b != '.')
-//     {
-        
-
-        
-//     }
-//     // TODO: Render floor in any case
-// }
-
+// TODO: Correctly implement time critical rendering
 void Scene::renderStatues()
 {
-    // TODO: Implement time-critical rendering
+    for (const Statue &statue : statues)
+        render(statue.meshLods.lods[0], statue.position);
 }
 
 void Scene::renderWalls()

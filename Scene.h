@@ -8,6 +8,9 @@
 
 #include <glm/glm.hpp>
 
+#include <iostream>
+#include <fstream>
+#include <string>
 #include <vector>
 
 // Scene contains all the entities of our game.
@@ -21,7 +24,6 @@ public:
     ~Scene();
 
     void init();
-    bool loadMesh(const char *filename);
     bool loadScene(const char * filename);
     void update(int deltaTime);
     void render();
@@ -32,6 +34,7 @@ public:
 
 private:
     void initShaders();
+    void loadModel(const std::string &modelDirectory, MeshLods &model);
 
     void renderWalls();
     void renderStatues();
@@ -39,11 +42,8 @@ private:
 
 private:
     Camera camera;
-    std::vector<TriangleMesh*> meshes;
     ShaderProgram basicProgram;
     float currentTime;
-    std::vector<std::vector<unsigned char>> tilemap;
-    std::vector<unsigned char> tile;
     bool bPolygonFill;
 
     TriangleMesh wall;
