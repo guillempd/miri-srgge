@@ -40,6 +40,11 @@ private:
     void renderStatues(bool debugColors);
     void render(const TriangleMesh &mesh, const glm::ivec2 &gridCoordinates);
 
+    float distanceToCamera(const glm::ivec2 &gridCoordinates) const;
+    float deltaCost(int lod, int index) const;
+    float deltaBenefit(int lod, int index) const;
+    Assignment nextAssignment(int lod, int index) const;
+
 private:
     Camera camera;
     ShaderProgram basicProgram;
@@ -50,6 +55,10 @@ private:
     std::vector<MeshLods> models; // models
     std::vector<Statue> statues; // statues to render
     std::vector<glm::ivec2> walls; // walls to render
+
+    // TODO: Actually measure TPS
+    float TPS = 1e6;
+    float FPS = 60.0f;
 };
 
 #endif // _SCENE_INCLUDE

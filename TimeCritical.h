@@ -29,11 +29,14 @@ struct Assignment
     float cost;
 };
 
+static float value(const Assignment &assignment)
+{
+    return assignment.benefit / assignment.cost;    
+}
+
 struct AssignmentPriority
 {
     bool operator()(const Assignment &lhs, const Assignment &rhs) {
-        float lhs_value = lhs.benefit / lhs.cost;
-        float rhs_value = rhs.benefit / rhs.cost;
-        return lhs_value < rhs_value;
+        return value(lhs) < value(rhs);
     }
 };

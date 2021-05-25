@@ -5,6 +5,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 
+#include "imgui.h"
+
 #include <iostream>
 #include <fstream>
 #include <queue>
@@ -66,7 +68,7 @@ bool Scene::loadScene(const char *filename)
             }
             else if (tile[c] >= 0) {
                 Statue statue = {models[tile[c]], glm::ivec2(x, y)};
-                statues.emplace_back(statue);
+                statues.push_back(statue);
             }
         }
     }
@@ -91,6 +93,11 @@ void Scene::update(int deltaTime)
 
 void Scene::render(bool debugColors)
 {
+    if (ImGui::Begin("Some settings")) {
+        ImGui::SliderFloat("TPS", &TPS, 1e6, 1e9, "%g", ImGuiSliderFlags_Logarithmic);
+    }
+    ImGui::End();
+
     const glm::mat4 &view = camera.getViewMatrix();
     const glm::mat4 &projection = camera.getProjectionMatrix();
 
@@ -105,21 +112,32 @@ void Scene::render(bool debugColors)
     renderStatues(debugColors);         
 }
 
-static float distance(const glm::vec3 &cameraPosition, const glm::ivec2 &statuePosition)
+float Scene::distanceToCamera(const glm::ivec2 &statuePosition) const
 {
-    return glm::length(cameraPosition - glm::vec3(statuePosition.x, 0.0f, statuePosition.y));
+    return glm::length(camera.getPosition() - glm::vec3(statuePosition.x, 0.0f, statuePosition.y));
 }
 
-float delta_benefit(int lod)
+float Scene::deltaBenefit(int lod, int index) const
 {
-    return 1.0f; // TODO: Actually implement
+    const Statue &statue = statues[index];
+    const AABB &statueAABB = statue.meshLods.lods[0].aabb;
+    float D = distanceToCamera(statue.position);
+    float d = 1.1f * glm::length(statueAABB.max - statueAABB.min);
+    return d / (D * glm::pow(2, lod));
 }
 
-float delta_cost(int lod, const MeshLods &meshLods)
+float Scene::deltaCost(int lod, int index) const
 {
+    const Statue &statue = statues[index];
+    const MeshLods &meshLods = statue.meshLods;
     int new_triangles = meshLods.lods[lod].triangles.size();
     int previous_triangles = meshLods.lods[lod-1].triangles.size();
     return new_triangles - previous_triangles;
+}
+
+Assignment Scene::nextAssignment(int index, int lod) const
+{
+    return {index, lod + 1, deltaBenefit(lod + 1, index), deltaCost(lod + 1, index)};
 }
 
 // TODO: Improve by starting with the same lods as previous frame
@@ -128,37 +146,30 @@ void Scene::renderStatues(bool debugColors)
     int n = statues.size();
     
     // Initially assign all statues the lowest lod
-    std::vector<int> statuesLod(n, 3); // 0 is lowest -> 4 is highest
-
-    for (int i = 0; i < n; ++i) {
-        const Statue &statue = statues[i];
-        if (distance(camera.getPosition(), statue.position) < 5.0f)
-            statuesLod[i] = 0;
-    }
+    std::vector<int> statuesLod(n, 0);
 
     // Greedy algorithm
-    // using PriorityQueue = std::priority_queue<Assignment,std::vector<Assignment>,AssignmentPriority>;
-    // PriorityQueue improvements;
-    // for (int i = 0; i < n; ++i) {
-    //     improvements.push({i, 1, delta_benefit(1), delta_cost(1, statues[i].meshLods)});
-    // }
+    using PriorityQueue = std::priority_queue<Assignment,std::vector<Assignment>,AssignmentPriority>;
+    PriorityQueue improvements;
+    for (int i = 0; i < n; ++i) {
+        improvements.push(nextAssignment(i, 0));
+    }
 
-    // const float max_cost = 1.0f; // TODO: Compute this
-    // float cost = 0.0f;
-    // while (cost < max_cost && !improvements.empty()) {
-    //     Assignment assignment = improvements.top();
-    //     if (cost + assignment.cost <= max_cost) {
-    //         cost += assignment.cost;
-    //         statuesLod[assignment.index] = assignment.lod;
-    //         if (assignment.lod < 3) {
-    //             int new_lod = assignment.lod + 1; 
-    //             improvements.push({assignment.index, new_lod, delta_benefit(new_lod), delta_cost(new_lod, statues[assignment.index].meshLods)}); // Insert assignment for next lod
-    //         }
-    //     }
-    // }
+    float cost = 0.0f;
+    float max_cost = TPS/FPS;
+    while (cost < max_cost && !improvements.empty()) {
+        Assignment assignment = improvements.top();
+        improvements.pop();
+        if (cost + assignment.cost <= max_cost) {
+            cost += assignment.cost;
+            statuesLod[assignment.index] = assignment.lod;
+            if (assignment.lod < 3) { 
+                improvements.push(nextAssignment(assignment.index, assignment.lod));
+            }
+        }
+    }
 
-    // Render final assignation
-    
+    // Render final assignments
     for (int i = 0; i < n; ++i) {
         const Statue &statue = statues[i];
         int lod = statuesLod[i];
