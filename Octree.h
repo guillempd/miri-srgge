@@ -8,7 +8,7 @@
 #include <Eigen/Eigen>
 
 #include <array>
-#include <forward_list>
+#include <list>
 
 using Plane = Eigen::Vector4f;
 

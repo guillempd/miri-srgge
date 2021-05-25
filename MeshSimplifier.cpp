@@ -146,7 +146,7 @@ TriangleMesh ObtainAverageLOD(const TriangleMesh &mesh, const std::vector<Octree
 
 std::vector<TriangleMesh> SimplifyMesh(const TriangleMesh &mesh, SimplificationMethod method, int max_depth, int lods)
 {
-    Octree octree(mesh.aabb, max_depth); // TODO: Pass in max_depth
+    Octree octree(mesh.aabb, max_depth);
     std::vector<OctreeNode*> representative(mesh.vertices.size(), nullptr);
 
     if (method == QEM) computeRepresentativesByCorners(mesh, octree, representative);
@@ -181,7 +181,7 @@ const std::string DEFAULT_MESH = "models/bunny.ply";
 const SimplificationMethod DEFAULT_METHOD = MEAN;
 
 const int MIN_MAX_DEPTH = 6;
-const int MAX_MAX_DEPTH = 12;
+const int MAX_MAX_DEPTH = 10;
 const int DEFAULT_MAX_DEPTH = 8;
 
 const int MIN_LODS = 1;
