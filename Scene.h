@@ -4,6 +4,7 @@
 #include "Camera.h"
 #include "ShaderProgram.h"
 #include "TriangleMesh.h"
+#include "TimeCritical.h"
 
 #include <glm/glm.hpp>
 
@@ -23,7 +24,7 @@ public:
     bool loadMesh(const char *filename);
     bool loadScene(const char * filename);
     void update(int deltaTime);
-    void render(int n);
+    void render();
 
     Camera &getCamera();
 
@@ -31,9 +32,10 @@ public:
 
 private:
     void initShaders();
-    void computeModelViewMatrix();
 
-    void render(int i, int j, const glm::mat4 &cameraModelView);
+    void renderWalls();
+    void renderStatues();
+    void render(const TriangleMesh &mesh, const glm::ivec2 &gridCoordinates);
 
 private:
     Camera camera;
@@ -43,6 +45,11 @@ private:
     std::vector<std::vector<unsigned char>> tilemap;
     std::vector<unsigned char> tile;
     bool bPolygonFill;
+
+    TriangleMesh wall;
+    std::vector<MeshLods> models; // models
+    std::vector<Statue> statues; // statues to render
+    std::vector<glm::ivec2> walls; // walls to render
 };
 
 #endif // _SCENE_INCLUDE

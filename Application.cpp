@@ -27,8 +27,6 @@ void Application::init()
     accumulatedDeltaTime = 0;
     frameRate = 0.0f;
 
-    copies = 1;
-
     mouseSensitivity = 0.01f;
 }
 
@@ -65,16 +63,11 @@ void Application::updateFrameRate(int deltaTime)
 void Application::render()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    scene.render(copies);
+    scene.render();
     
     if(ImGui::Begin("Frame Rate"))
         ImGui::Text((std::to_string(frameRate) + std::string("fps")).c_str());
     ImGui::End();
-
-    // if (ImGui::Begin("Copies"))
-    //     ImGui::Text(std::to_string(copies).c_str());
-    // ImGui::End();
-    // ImGui::ShowDemoWindow();
 }
 
 void Application::resize(int width, int height)
@@ -92,7 +85,6 @@ void Application::keyPressed(int key)
 
 void Application::keyReleased(int key)
 {
-    if ('1' <= key && key <= '9') copies = key - '0';
     keys[key] = false;
 }
 

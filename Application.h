@@ -57,7 +57,6 @@ private:
     float frameRate;
     float mouseSensitivity;
 
-    int copies;
 };
 
 #endif // _APPLICATION_INCLUDE

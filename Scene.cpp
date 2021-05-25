@@ -14,7 +14,6 @@ Scene::Scene()
     meshes = {};
 }
 
-// TODO: Cleanup all the meshes
 Scene::~Scene()
 {
     for (auto mesh : meshes)
@@ -36,20 +35,12 @@ void Scene::init()
     
     tilemap = {{}};
     tile = std::vector<unsigned char>(256, 0);
+
+    wall.buildCube();
+    wall.sendToOpenGL(basicProgram);
 }
 
-// bool Scene::loadMesh(const char *filename)
-// {
-//     PLYReader reader;
-
-//     mesh->free();
-//     bool bSuccess = reader.readMesh(filename, *mesh);
-//     if (bSuccess)
-//         mesh->sendToOpenGL(basicProgram);
-
-//     return bSuccess;
-// }
-
+// TODO: Load scene and fill models, statues and walls
 bool Scene::loadScene(const char *filename)
 {
     std::ifstream fin(filename, std::ios::in);
@@ -81,6 +72,9 @@ bool Scene::loadScene(const char *filename)
     for (int y = 0; y < h; ++y) {
         for (int x = 0; x < w; ++x) {
             fin >> tilemap[x][y];
+            if (tilemap[x][y] == 'x') {
+                walls.emplace_back(x, y);
+            }
         }
     }
     return true;
@@ -92,55 +86,75 @@ void Scene::update(int deltaTime)
     camera.update(deltaTime);
 }
 
-void Scene::render(int n)
+void Scene::render()
 {
-    int w = tilemap.size();
-    int h = tilemap[0].size();
-    const glm::mat4 &viewMatrix = camera.getViewMatrix();
-    const glm::mat4 &projectionMatrix = camera.getProjectionMatrix();
+    const glm::mat4 &view = camera.getViewMatrix();
+    const glm::mat4 &projection = camera.getProjectionMatrix();
+
     basicProgram.use();
-    basicProgram.setUniformMatrix4f("view", viewMatrix);
-    basicProgram.setUniformMatrix4f("projection", projectionMatrix);
+    basicProgram.setUniformMatrix4f("view", view);
+    basicProgram.setUniformMatrix4f("projection", projection);
     basicProgram.setUniform1i("bLighting", bPolygonFill ? 1 : 0);
-    if (bPolygonFill)
-    {
-        basicProgram.setUniform4f("color", 0.9f, 0.9f, 0.95f, 1.0f);
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    }
-    else
-    {
-        basicProgram.setUniform4f("color", 1.0f, 1.0f, 1.0f, 1.0f);
-        glEnable(GL_POLYGON_OFFSET_FILL);
-        glPolygonOffset(0.5f, 1.0f);
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        for (int x = 0; x < w; ++x)
-            for (int y = 0; y < h; ++y)
-                render(x, y, viewMatrix);
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        glDisable(GL_POLYGON_OFFSET_FILL);
-        basicProgram.setUniform4f("color", 0.0f, 0.0f, 0.0f, 1.0f);
-    }
-    for (int x = 0; x < w; ++x)
-        for (int y = 0; y < h; ++y)
-            render(x, y, viewMatrix);            
+    basicProgram.setUniform4f("color", 0.9f, 0.9f, 0.95f, 1.0f);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    
+    renderWalls();
+    renderStatues();
+    // basicProgram.setUniform1i("bLighting", bPolygonFill ? 1 : 0);
+    // if (bPolygonFill)
+    // {
+    //     basicProgram.setUniform4f("color", 0.9f, 0.9f, 0.95f, 1.0f);
+    //     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    // }
+    // else
+    // {
+    //     basicProgram.setUniform4f("color", 1.0f, 1.0f, 1.0f, 1.0f);
+    //     glEnable(GL_POLYGON_OFFSET_FILL);
+    //     glPolygonOffset(0.5f, 1.0f);
+    //     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    //     for (int x = 0; x < w; ++x)
+    //         for (int y = 0; y < h; ++y)
+    //             render(x, y, viewMatrix);
+    //     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    //     glDisable(GL_POLYGON_OFFSET_FILL);
+    //     basicProgram.setUniform4f("color", 0.0f, 0.0f, 0.0f, 1.0f);
+    // }          
 }
 
-void Scene::render(int x, int y, const glm::mat4 &viewMatrix)
+// void Scene::render(int x, int y, const glm::mat4 &viewMatrix)
+// {
+//     unsigned char b = tilemap[x][y];
+//     unsigned char i = tile[b];
+//     if (i >= 0 && b != '.')
+//     {
+        
+
+        
+//     }
+//     // TODO: Render floor in any case
+// }
+
+void Scene::renderStatues()
 {
-    unsigned char b = tilemap[x][y];
-    unsigned char i = tile[b];
-    if (i >= 0 && b != '.')
-    {
-        glm::mat4 modelMatrix(1.0f);
-        modelMatrix = glm::translate(modelMatrix, glm::vec3(x, 0, y));
-        basicProgram.setUniformMatrix4f("model", modelMatrix);
+    // TODO: Implement time-critical rendering
+}
 
-        glm::mat3 normalMatrix = glm::mat3(glm::inverseTranspose(viewMatrix * modelMatrix));
-        basicProgram.setUniformMatrix3f("normalMatrix", normalMatrix);
+void Scene::renderWalls()
+{
+    for (const glm::ivec2 &gridCoordinates : walls)
+        render(wall, gridCoordinates);
+}
 
-        meshes[i]->render();
-    }
-    // TODO: Render floor in any case
+void Scene::render(const TriangleMesh &mesh, const glm::ivec2 &gridCoordinates)
+{
+    glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(gridCoordinates.x, 0, gridCoordinates.y));
+    basicProgram.setUniformMatrix4f("model", model);
+
+    const glm::mat4 &view = camera.getViewMatrix();
+    glm::mat3 normalMatrix = glm::mat3(glm::inverseTranspose(view * model));
+    basicProgram.setUniformMatrix3f("normalMatrix", normalMatrix);
+
+    mesh.render();
 }
 
 Camera &Scene::getCamera()
