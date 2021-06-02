@@ -59,6 +59,7 @@ bool Scene::loadScene(const char *filename)
     // Read & Store walls and statues
     int w, h;
     fin >> w >> h;
+    map = std::vector<std::vector<int>> (w, std::vector<int>(h, -1));
     for (int y = 0; y < h; ++y) {
         for (int x = 0; x < w; ++x) {
             unsigned char c;
@@ -66,12 +67,25 @@ bool Scene::loadScene(const char *filename)
             if (c == 'x') {
                 walls.emplace_back(x, y);
             }
-            else if (tile[c] >= 0) {
-                Statue statue = {models[tile[c]], glm::ivec2(x, y)};
-                statues.push_back(statue);
+            else if (tile[c] >= 0) map[x][y] = tile[c];
+        }
+    }
+
+    // Read visibility
+    visibility = std::vector<std::vector<std::vector<glm::ivec2>>> (w, std::vector<std::vector<glm::ivec2>>(h));
+    for (int y = 0; y < h; ++y) {
+        for (int x = 0; x < w; ++x) {
+            for(int xx = 0; xx < w; ++xx) {
+                for (int yy = 0; yy< h; ++yy) {
+                    visibility[x][y].push_back(glm::ivec2(xx, yy));
+                }
             }
         }
     }
+
+    width = w;
+    height = h;
+
     return true;
 }
 
@@ -109,7 +123,7 @@ void Scene::render(bool debugColors)
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     
     renderWalls();
-    renderStatues(debugColors);         
+    renderStatues(debugColors);     
 }
 
 float Scene::distanceToCamera(const glm::ivec2 &statuePosition) const
@@ -119,7 +133,7 @@ float Scene::distanceToCamera(const glm::ivec2 &statuePosition) const
 
 float Scene::deltaBenefit(int lod, int index) const
 {
-    const Statue &statue = statues[index];
+    const Statue &statue = PVS[index];
     const AABB &statueAABB = statue.meshLods.lods[0].aabb;
     float D = distanceToCamera(statue.position);
     float d = 1.1f * glm::length(statueAABB.max - statueAABB.min);
@@ -128,7 +142,7 @@ float Scene::deltaBenefit(int lod, int index) const
 
 float Scene::deltaCost(int lod, int index) const
 {
-    const Statue &statue = statues[index];
+    const Statue &statue = PVS[index];
     const MeshLods &meshLods = statue.meshLods;
     int new_triangles = meshLods.lods[lod].triangles.size();
     int previous_triangles = meshLods.lods[lod-1].triangles.size();
@@ -143,7 +157,9 @@ Assignment Scene::nextAssignment(int index, int lod) const
 // TODO: Improve by starting with the same lods as previous frame
 void Scene::renderStatues(bool debugColors)
 {
-    int n = statues.size();
+    recomputePVS();
+
+    int n = PVS.size();
     
     // Initially assign all statues the lowest lod
     std::vector<int> statuesLod(n, 0);
@@ -171,7 +187,7 @@ void Scene::renderStatues(bool debugColors)
 
     // Render final assignments
     for (int i = 0; i < n; ++i) {
-        const Statue &statue = statues[i];
+        const Statue &statue = PVS[i];
         int lod = statuesLod[i];
         if (debugColors) {
             switch(lod) {
@@ -209,6 +225,23 @@ void Scene::render(const TriangleMesh &mesh, const glm::ivec2 &gridCoordinates)
     basicProgram.setUniformMatrix3f("normalMatrix", normalMatrix);
 
     mesh.render();
+}
+
+void Scene::recomputePVS()
+{
+    PVS.clear();
+
+    // TODO: Correctly compute camera position
+    glm::vec3 cameraPosition = camera.getPosition();
+    glm::ivec2 gridPosition = glm::ivec2(cameraPosition.x, cameraPosition.z);
+    gridPosition = glm::clamp(gridPosition, glm::ivec2(0, 0), glm::ivec2(width-1, height-1));
+
+    for (auto statueGridPosition : visibility[gridPosition.x][gridPosition.y]) {
+        int modelIndex = map[statueGridPosition.x][statueGridPosition.y];
+        if (modelIndex >= 0) { // TODO: This check should be redundant since we are only going to store positions that actually have a statue
+            PVS.push_back({models[modelIndex], statueGridPosition});
+        }
+    }
 }
 
 Camera &Scene::getCamera()
