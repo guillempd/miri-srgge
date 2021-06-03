@@ -34,6 +34,11 @@ public:
 
 private:
     void initShaders();
+
+    bool loadModels(const char *filename, std::vector<int> &modelIndex);
+    bool loadFloorPlan(const char *filename, std::vector<int> &modelIndex);
+    bool loadVisibility(const char *filename);
+
     void loadModel(const std::string &modelDirectory, MeshLods &model);
 
     void renderWalls();
@@ -68,8 +73,8 @@ private:
     // Visibility data structure
     // TODO: Initialize
     std::vector<Statue> PVS;
-    std::vector<std::vector<std::vector<glm::ivec2>>> visibility; // visibility[x][y] is a list of the positions visible from (x,y), only store those with statues (walls are always rendered)
-    std::vector<std::vector<int>> map; // map[x][y] is the index to the model occupying position (x,y) TODO: maybe change by char
+    std::vector<std::vector<std::vector<glm::ivec2>>> visibleFrom; // visibility[x][y] is a list of the positions visible from (x,y), only store those with statues (walls are always rendered)
+    std::vector<std::vector<int>> floorPlan; // map[x][y] is the index to the model occupying position (x,y) TODO: maybe change by char
 
 };
 

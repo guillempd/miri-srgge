@@ -24,7 +24,7 @@ void Camera::init()
     lookDirection = glm::vec3(0.0f, 0.0f, -1.0f);
     theta = glm::half_pi<float>();
     phi = 0.0f;
-    speed = 0.01f;
+    speed = 0.005f;
     updateViewMatrix();
 }
 

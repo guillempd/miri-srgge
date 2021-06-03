@@ -200,11 +200,11 @@ int main(int argc, char **argv)
 
     // Application instance initialization
     Application::instance().init();
-    Application::instance().loadScene("test.tm");
-    // if (argc > 1) Application::instance().loadScene(argv[1]); // TODO: This should instead loadScene
-    prevTime = glutGet(GLUT_ELAPSED_TIME);
-    // GLUT gains control of the application
-    glutMainLoop();
+    if (Application::instance().loadScene("1")) {
+        prevTime = glutGet(GLUT_ELAPSED_TIME);
+        glutMainLoop();
+    }
+    else std::cerr << "Couldn't load scene." << std::endl;
 
     // Dear ImGui cleanup
     ImGui_ImplOpenGL3_Shutdown();

@@ -10,7 +10,7 @@
 #include <unordered_set>
 #include <vector>
 
-constexpr int N_RAYS = 1e6;
+constexpr int N_RAYS = 1e8;
 constexpr float EPS = 1e-3;
 
 // GLOBALS
@@ -132,14 +132,13 @@ Ray generateRay()
     return {origin, glm::normalize(destination - origin)};
 }
 
-void updateVisibility(const std::vector<glm::ivec2> &room)
+void updateVisibility(glm::ivec2 cell, const std::vector<glm::ivec2> &room, bool newStatue)
 {
     int n = room.size();
-    glm::ivec2 newStatuePosition = room.back();
-    for (int i = 0; i < n-1; ++i) {
+    for (int i = 0; i < n; ++i) {
         glm::ivec2 statuePosition = room[i];
-        visibleFrom[statuePosition.x][statuePosition.y].insert(newStatuePosition);
-        visibleFrom[newStatuePosition.x][newStatuePosition.y].insert(statuePosition);
+        visibleFrom[cell.x][cell.y].insert(statuePosition);
+        if (newStatue) visibleFrom[statuePosition.x][statuePosition.y].insert(cell);
     }
 }
 
@@ -174,13 +173,14 @@ void traverseRay(Ray ray)
         unsigned char c = map[traversal.cell.x][traversal.cell.y];
         switch(c) {
             case '.':
+                updateVisibility(traversal.cell, currentRoom, false);
                 break;
             case 'x':
                 currentRoom.clear();
                 break;
             default:
                 currentRoom.push_back(traversal.cell);
-                updateVisibility(currentRoom);
+                updateVisibility(traversal.cell, currentRoom, true);
                 break;
         }
         advance(traversal);
@@ -189,7 +189,7 @@ void traverseRay(Ray ray)
 
 void readMap()
 {
-    std::ifstream fin("visibility.in");
+    std::ifstream fin("1.tm");
     if (!fin.is_open()) std::exit(EXIT_FAILURE);
 
     int w, h;
@@ -214,12 +214,11 @@ void initialize()
 
 void writeVisibility()
 {
-    std::ofstream fout("visibility.out");
+    std::ofstream fout("1.v");
     if (!fout.is_open()) std::exit(EXIT_FAILURE);
 
     int w = map.size();
     int h = map[0].size();
-    fout << w * h << '\n';
     for (int x = 0; x < w; ++x) {
         for (int y = 0; y < h; ++y) {
             fout << x << ' ' << y;

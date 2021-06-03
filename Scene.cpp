@@ -9,6 +9,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <queue>
 #include <string>
 
@@ -36,56 +37,34 @@ void Scene::init()
     wall.sendToOpenGL(basicProgram);
 }
 
+
 bool Scene::loadScene(const char *filename)
 {
-    std::ifstream fin(filename, std::ios::in);
+    std::vector<int> modelIndex;
+    if (!loadModels(filename, modelIndex)) return false;
+    if (!loadFloorPlan(filename, modelIndex)) return false;
+    if (!loadVisibility(filename)) return false;
+    return true;
+}
+
+bool Scene::loadModels(const char *filename, std::vector<int> &modelIndex)
+{
+    std::string models_extension = ".m";
+    std::ifstream fin(filename + models_extension);
     if (!fin.is_open()) return false;
 
-    std::vector<int> tile(256, -1);
+    modelIndex = std::vector<int>(256, -1);
 
-    // Read & Load models
     int n;
     fin >> n;
-    for (int i = 0; i < n; ++i)
-    {
+    for (int i = 0; i < n; ++i) {
         unsigned char c;
         std::string modelDirectory;
         fin >> c >> modelDirectory;
         models.emplace_back();
         loadModel(modelDirectory, models[i]);
-        tile[c] = i;
+        modelIndex[c] = i;
     }
-
-    // Read & Store walls and statues
-    int w, h;
-    fin >> w >> h;
-    map = std::vector<std::vector<int>> (w, std::vector<int>(h, -1));
-    for (int y = 0; y < h; ++y) {
-        for (int x = 0; x < w; ++x) {
-            unsigned char c;
-            fin >> c;
-            if (c == 'x') {
-                walls.emplace_back(x, y);
-            }
-            else if (tile[c] >= 0) map[x][y] = tile[c];
-        }
-    }
-
-    // Read visibility
-    visibility = std::vector<std::vector<std::vector<glm::ivec2>>> (w, std::vector<std::vector<glm::ivec2>>(h));
-    for (int y = 0; y < h; ++y) {
-        for (int x = 0; x < w; ++x) {
-            for(int xx = 0; xx < w; ++xx) {
-                for (int yy = 0; yy< h; ++yy) {
-                    visibility[x][y].push_back(glm::ivec2(xx, yy));
-                }
-            }
-        }
-    }
-
-    width = w;
-    height = h;
-
     return true;
 }
 
@@ -97,6 +76,47 @@ void Scene::loadModel(const std::string &modelDirectory, MeshLods &model)
         PLYReader::readMesh(meshFilename, lod);
         lod.sendToOpenGL(basicProgram);
     }
+}
+
+bool Scene::loadFloorPlan(const char *filename, std::vector<int> &modelIndex)
+{
+    std::string floor_plan_extension = ".tm";
+    std::ifstream fin(filename + floor_plan_extension);
+    if (!fin.is_open()) return false;
+
+    fin >> width >> height;
+    floorPlan = std::vector<std::vector<int>> (width, std::vector<int>(height, -1));
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; ++x) {
+            unsigned char c;
+            fin >> c;
+            if (c == 'x') walls.emplace_back(x, y);
+            else if (modelIndex[c] >= 0) floorPlan[x][y] = modelIndex[c];
+        }
+    }
+    return true;
+}
+
+bool Scene::loadVisibility(const char *filename)
+{
+    std::string visibility_extension = ".v";
+    std::ifstream fin(filename + visibility_extension);
+    if (!fin.is_open()) return false;
+
+    visibleFrom = std::vector<std::vector<std::vector<glm::ivec2>>> (width, std::vector<std::vector<glm::ivec2>>(height));
+    for (int x = 0; x < width; ++x) {
+        for (int y = 0; y < height; ++y) {
+            std::string line;
+            std::getline(fin, line);
+            std::istringstream sin(line);
+
+            int x_0, y_0;
+            sin >> x_0 >> y_0;
+            int x_vis, y_vis;
+            while (sin >> x_vis >> y_vis) visibleFrom[x_0][y_0].push_back({x_vis, y_vis});
+        }
+    }
+    return true;
 }
 
 void Scene::update(int deltaTime)
@@ -217,7 +237,7 @@ void Scene::renderWalls()
 
 void Scene::render(const TriangleMesh &mesh, const glm::ivec2 &gridCoordinates)
 {
-    glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(gridCoordinates.x, 0, gridCoordinates.y));
+    glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(gridCoordinates.x + 0.5f, +0.5f, gridCoordinates.y + 0.5f));
     basicProgram.setUniformMatrix4f("model", model);
 
     const glm::mat4 &view = camera.getViewMatrix();
@@ -231,16 +251,13 @@ void Scene::recomputePVS()
 {
     PVS.clear();
 
-    // TODO: Correctly compute camera position
     glm::vec3 cameraPosition = camera.getPosition();
     glm::ivec2 gridPosition = glm::ivec2(cameraPosition.x, cameraPosition.z);
     gridPosition = glm::clamp(gridPosition, glm::ivec2(0, 0), glm::ivec2(width-1, height-1));
 
-    for (auto statueGridPosition : visibility[gridPosition.x][gridPosition.y]) {
-        int modelIndex = map[statueGridPosition.x][statueGridPosition.y];
-        if (modelIndex >= 0) { // TODO: This check should be redundant since we are only going to store positions that actually have a statue
-            PVS.push_back({models[modelIndex], statueGridPosition});
-        }
+    for (auto statueGridPosition : visibleFrom[gridPosition.x][gridPosition.y]) {
+        int modelIndex = floorPlan[statueGridPosition.x][statueGridPosition.y];
+        PVS.push_back({models[modelIndex], statueGridPosition});
     }
 }
 
