@@ -35,9 +35,9 @@ link_directories(${GLEW_LIBRARY_DIRS})
 
 add_executable(${appName} imgui/imgui.h imgui/imgui.cpp imgui/imgui_demo.cpp imgui/imgui_draw.cpp imgui/imgui_tables.cpp imgui/imgui_widgets.cpp imgui/backends/imgui_impl_glut.h imgui/backends/imgui_impl_glut.cpp imgui/backends/imgui_impl_opengl3.h imgui/backends/imgui_impl_opengl3.cpp
 PLYReader.h PLYReader.cpp TriangleMesh.h TriangleMesh.cpp Camera.h Camera.cpp Scene.h Scene.cpp Shader.h Shader.cpp ShaderProgram.h ShaderProgram.cpp Application.h Application.cpp main.cpp)
-
 target_link_libraries(${appName} ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES} ${GLEW_LIBRARIES})
 
 add_executable(MeshSimplifier TriangleMesh.cpp ShaderProgram.cpp Shader.cpp PLYReader.cpp PLYWriter.cpp MeshSimplifier.cpp Octree.cpp)
 target_link_libraries(MeshSimplifier ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES} ${GLEW_LIBRARIES} Eigen3::Eigen) 
 
+add_executable(VisibilityPrecomputation VisibilityPrecomputation.cpp)
