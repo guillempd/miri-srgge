@@ -10,10 +10,14 @@
 #include <unordered_set>
 #include <vector>
 
-constexpr int N_RAYS = 1e8;
+constexpr int N_RAYS = 1e6;
 constexpr float EPS = 1e-3;
 
 // GLOBALS
+
+using TileMap = std::vector<std::vector<unsigned char>>;
+using VisibilityMap = std::vector<std::vector<std::unordered_set<glm::ivec2>>>;
+
 std::vector<std::vector<std::unordered_set<glm::ivec2>>> visibleFrom;
 std::vector<std::vector<unsigned char>> map;
 
@@ -69,14 +73,18 @@ RayTraversal getTraversalFromRay(Ray ray)
     traversal.next_x = traversal.tx;
     traversal.next_y = traversal.ty;
 
+    // Use similar triangles to determine the correct initial value of next_y
     if (ray.origin.x == 0 || ray.origin.x == w) {
-        if (ray.direction.y > 0) traversal.next_y = (1 - frac(ray.origin.y)) * traversal.ty;
-        else traversal.next_y = frac(ray.origin.y) * traversal.ty;
+        float fy = frac(ray.origin.y);
+        if (ray.direction.y > 0) traversal.next_y = (1 - fy) * traversal.ty;
+        else traversal.next_y = fy * traversal.ty;
     }
 
-    else if (ray.origin.y == 0 || ray.origin.y == h-1) {
-        if (ray.direction.x > 0) traversal.next_y = (1 - frac(ray.origin.x)) * traversal.tx;
-        else traversal.next_x = frac(ray.origin.x) * traversal.tx;
+    // Use similar triangles to determine the correct initial value of next_x
+    else if (ray.origin.y == 0 || ray.origin.y == h) {
+        float fx = frac(ray.origin.x);
+        if (ray.direction.x > 0) traversal.next_x = (1 - fx) * traversal.tx;
+        else traversal.next_x = fx * traversal.tx;
     }
 
     return traversal;
@@ -145,13 +153,13 @@ void updateVisibility(glm::ivec2 cell, const std::vector<glm::ivec2> &room, bool
 void advance(RayTraversal &traversal)
 {
     if (traversal.next_x < traversal.next_y) {
-        traversal.next_x = traversal.tx;
         traversal.next_y -= traversal.next_x;
+        traversal.next_x = traversal.tx;
         traversal.cell.x += traversal.dx;
     }
     else { // traversal.next_y <= traversal.next_x
-        traversal.next_y = traversal.ty;
         traversal.next_x -= traversal.next_y;
+        traversal.next_y = traversal.ty;
         traversal.cell.y += traversal.dy;
     }
 }
@@ -187,9 +195,9 @@ void traverseRay(Ray ray)
     }
 }
 
-void readMap()
+void readMap(const std::string &tm)
 {
-    std::ifstream fin("1.tm");
+    std::ifstream fin(tm + ".tm");
     if (!fin.is_open()) std::exit(EXIT_FAILURE);
 
     int w, h;
@@ -212,9 +220,9 @@ void initialize()
     random_height = std::uniform_real_distribution<float>(0, h);
 }
 
-void writeVisibility()
+void writeVisibility(const std::string &v)
 {
-    std::ofstream fout("1.v");
+    std::ofstream fout(v + ".v");
     if (!fout.is_open()) std::exit(EXIT_FAILURE);
 
     int w = map.size();
@@ -230,13 +238,20 @@ void writeVisibility()
     }
 }
 
-int main()
+std::string DEFAULT_TM = "test";
+
+int main(int argc, char **argv)
 {
-    readMap();
+    std::string tm = DEFAULT_TM;
+    if (argc > 1) {
+        tm = argv[1];
+    }
+
+    readMap(tm);
     initialize();
     for (int i = 0; i < N_RAYS; ++i) {
         Ray ray = generateRay();
         traverseRay(ray);
     }
-    writeVisibility();
+    writeVisibility(tm);
 }
