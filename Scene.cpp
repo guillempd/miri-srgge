@@ -31,14 +31,12 @@ void Scene::init()
 
     camera.init();
 
-    bPolygonFill = true;
-
     wall.buildCube();
     wall.sendToOpenGL(basicProgram);
 }
 
 
-bool Scene::loadScene(const char *filename)
+bool Scene::loadScene(const std::string &filename)
 {
     std::vector<int> modelIndex;
     if (!loadModels(filename, modelIndex)) return false;
@@ -47,7 +45,7 @@ bool Scene::loadScene(const char *filename)
     return true;
 }
 
-bool Scene::loadModels(const char *filename, std::vector<int> &modelIndex)
+bool Scene::loadModels(const std::string &filename, std::vector<int> &modelIndex)
 {
     std::string models_extension = ".m";
     std::ifstream fin(filename + models_extension);
@@ -78,7 +76,7 @@ void Scene::loadModel(const std::string &modelDirectory, MeshLods &model)
     }
 }
 
-bool Scene::loadFloorPlan(const char *filename, std::vector<int> &modelIndex)
+bool Scene::loadFloorPlan(const std::string &filename, std::vector<int> &modelIndex)
 {
     std::string floor_plan_extension = ".tm";
     std::ifstream fin(filename + floor_plan_extension);
@@ -97,7 +95,7 @@ bool Scene::loadFloorPlan(const char *filename, std::vector<int> &modelIndex)
     return true;
 }
 
-bool Scene::loadVisibility(const char *filename)
+bool Scene::loadVisibility(const std::string &filename)
 {
     std::string visibility_extension = ".v";
     std::ifstream fin(filename + visibility_extension);
@@ -125,10 +123,11 @@ void Scene::update(int deltaTime)
     camera.update(deltaTime);
 }
 
-void Scene::render(bool debugColors)
+void Scene::render()
 {
-    if (ImGui::Begin("Some settings")) {
+    if (ImGui::Begin("Settings")) {
         ImGui::SliderFloat("TPS", &TPS, 1e6, 1e9, "%g", ImGuiSliderFlags_Logarithmic);
+        ImGui::Checkbox("Enable/Disable debug colors", &debugColors);
     }
     ImGui::End();
 
@@ -138,12 +137,12 @@ void Scene::render(bool debugColors)
     basicProgram.use();
     basicProgram.setUniformMatrix4f("view", view);
     basicProgram.setUniformMatrix4f("projection", projection);
-    basicProgram.setUniform1i("bLighting", bPolygonFill ? 1 : 0);
+    basicProgram.setUniform1i("bLighting", 1);
     basicProgram.setUniform4f("color", 0.9f, 0.9f, 0.95f, 1.0f);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     
     renderWalls();
-    renderStatues(debugColors);     
+    renderStatues();     
 }
 
 float Scene::distanceToCamera(const glm::ivec2 &statuePosition) const
@@ -175,7 +174,7 @@ Assignment Scene::nextAssignment(int index, int lod) const
 }
 
 // TODO: Improve by starting with the same lods as previous frame
-void Scene::renderStatues(bool debugColors)
+void Scene::renderStatues()
 {
     recomputePVS();
 
@@ -264,11 +263,6 @@ void Scene::recomputePVS()
 Camera &Scene::getCamera()
 {
     return camera;
-}
-
-void Scene::switchPolygonMode()
-{
-    bPolygonFill = !bPolygonFill;
 }
 
 void Scene::initShaders()

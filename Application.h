@@ -19,8 +19,7 @@ public:
     }
 
     void init();
-    bool loadMesh(const char *filename);
-    bool loadScene(const char * filename);
+    bool loadScene(const std::string &filename);
     bool update(int deltaTime);
     void render();
 

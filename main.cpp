@@ -8,6 +8,7 @@
 #include "Application.h"
 
 #include <iostream>
+#include <string>
 
 //Remove console (only works in Visual Studio)
 #pragma comment(linker, "/subsystem:\"windows\" /entry:\"mainCRTStartup\"")
@@ -16,6 +17,8 @@
 
 #define GLUT_SCROLL_UP      0x0003
 #define GLUT_SCROLL_DOWN    0x0004
+
+std::string DEFAULT_SCENE = "test";
 
 static int prevTime;
 static bool capturingMouse;
@@ -165,6 +168,9 @@ static void idleCallback()
 
 int main(int argc, char **argv)
 {
+    std::string scene = DEFAULT_SCENE;
+    if (argc > 1) scene = argv[1];
+
     // GLUT initialization
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH);
@@ -200,7 +206,7 @@ int main(int argc, char **argv)
 
     // Application instance initialization
     Application::instance().init();
-    if (Application::instance().loadScene("1")) {
+    if (Application::instance().loadScene(scene)) {
         prevTime = glutGet(GLUT_ELAPSED_TIME);
         glutMainLoop();
     }

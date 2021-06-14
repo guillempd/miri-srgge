@@ -30,13 +30,7 @@ void Application::init()
     mouseSensitivity = 0.01f;
 }
 
-bool Application::loadMesh(const char *filename)
-{
-    // return scene.loadMesh(filename);
-    return false;
-}
-
-bool Application::loadScene(const char *filename)
+bool Application::loadScene(const std::string &filename)
 {
     return scene.loadScene(filename);
 }
@@ -62,16 +56,11 @@ void Application::updateFrameRate(int deltaTime)
 
 void Application::render()
 {
-    if(ImGui::Begin("Settings")) {
-        ImGui::Checkbox("Show debug colors", &debugColors);
-    }
-    ImGui::End();
-
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    scene.render(debugColors);
+    scene.render();
     
-    if(ImGui::Begin("Frame Rate"))
-        ImGui::Text((std::to_string(frameRate) + std::string("fps")).c_str());
+    if(ImGui::Begin("Performance statistics"))
+        ImGui::Text("%g fps", frameRate);
     ImGui::End();
 }
 
@@ -101,8 +90,6 @@ void Application::specialKeyPressed(int key)
 void Application::specialKeyReleased(int key)
 {
     specialKeys[key] = false;
-    if (key == GLUT_KEY_F1)
-        scene.switchPolygonMode();
 }
 
 void Application::mouseMove(int x, int y)
