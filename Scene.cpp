@@ -33,6 +33,9 @@ void Scene::init()
 
     wall.buildCube();
     wall.sendToOpenGL(basicProgram);
+
+    TPS = 1e7;
+    FPS = 60.0f;
 }
 
 
@@ -126,7 +129,7 @@ void Scene::update(int deltaTime)
 void Scene::render()
 {
     if (ImGui::Begin("Settings")) {
-        ImGui::SliderFloat("TPS", &TPS, 1e6, 1e9, "%g", ImGuiSliderFlags_Logarithmic);
+        ImGui::SliderFloat("TPS", &TPS, 1e7, 1e10, "%g", ImGuiSliderFlags_Logarithmic);
         ImGui::Checkbox("Enable/Disable debug colors", &debugColors);
     }
     ImGui::End();
@@ -154,9 +157,15 @@ float Scene::deltaBenefit(int lod, int index) const
 {
     const Statue &statue = PVS[index];
     const AABB &statueAABB = statue.meshLods.lods[0].aabb;
+
     float D = distanceToCamera(statue.position);
-    float d = 1.1f * glm::length(statueAABB.max - statueAABB.min);
-    return d / (D * glm::pow(2, lod));
+    
+    // Compute the squared and augmented bounding box to obtain the max edge length
+    glm::vec3 length = statueAABB.max - statueAABB.min;
+    float max_length = std::max(length.x, std::max(length.y, length.z));
+    float d = 1.1f * glm::length(glm::vec3(max_length));
+    
+    return d / (D * glm::pow(2, lod + 5)); // lod + 5 to obtain the subdivision level according to its lod
 }
 
 float Scene::deltaCost(int lod, int index) const
@@ -173,24 +182,31 @@ Assignment Scene::nextAssignment(int index, int lod) const
     return {index, lod + 1, deltaBenefit(lod + 1, index), deltaCost(lod + 1, index)};
 }
 
-// TODO: Improve by starting with the same lods as previous frame
 void Scene::renderStatues()
 {
     recomputePVS();
 
     int n = PVS.size();
     
-    // Initially assign all statues the lowest lod
+    // Initial assignment of each statue to its lowest lod
     std::vector<int> statuesLod(n, 0);
 
-    // Greedy algorithm
+    // Priority queue of improvements to make in the current assignment
     using PriorityQueue = std::priority_queue<Assignment,std::vector<Assignment>,AssignmentPriority>;
     PriorityQueue improvements;
     for (int i = 0; i < n; ++i) {
         improvements.push(nextAssignment(i, 0));
     }
 
-    float cost = 0.0f;
+    // Initialize cost with the number of triangles of walls + initial assignment
+    float cost = walls.size() * 12;
+    for (int i = 0; i < n; ++i) {
+        const Statue &statue = PVS[i];
+        float cost_to_add = statue.meshLods.lods[0].triangles.size() / 3;
+        cost += cost_to_add;
+    }
+
+    // Greedy algorithm to compute assignments
     float max_cost = TPS/FPS;
     while (cost < max_cost && !improvements.empty()) {
         Assignment assignment = improvements.top();
@@ -204,7 +220,7 @@ void Scene::renderStatues()
         }
     }
 
-    // Render final assignments
+    // Render final assignments with its corresponding color
     for (int i = 0; i < n; ++i) {
         const Statue &statue = PVS[i];
         int lod = statuesLod[i];
@@ -236,7 +252,7 @@ void Scene::renderWalls()
 
 void Scene::render(const TriangleMesh &mesh, const glm::ivec2 &gridCoordinates)
 {
-    glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(gridCoordinates.x + 0.5f, +0.5f, gridCoordinates.y + 0.5f));
+    glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(gridCoordinates.x + 0.5f, 0.5f, gridCoordinates.y + 0.5f));
     basicProgram.setUniformMatrix4f("model", model);
 
     const glm::mat4 &view = camera.getViewMatrix();

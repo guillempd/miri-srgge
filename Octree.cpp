@@ -84,7 +84,6 @@ glm::vec3 Octree::average(OctreeNode *node)
 glm::vec3 Octree::QEM(OctreeNode *node)
 {
     if (!node->is_leaf) aggregate(node);
-    // return node->pointer.data->average;
 
     using Matrix4 = Eigen::Matrix4d;
     using Vector4 = Eigen::Vector4d;
@@ -104,7 +103,7 @@ glm::vec3 Octree::QEM(OctreeNode *node)
     Vector4 b(0, 0, 0, 1);
 
     JacobiSVD svd(Q, Eigen::ComputeFullU | Eigen::ComputeFullV);
-    if (svd.rank() < 4) return average(node); // TODO: Improve this checking for rank 3 (case of edges)
+    if (svd.rank() < 4) return average(node);
     else
     {
         Vector4 result = svd.solve(b);
@@ -116,7 +115,7 @@ glm::vec3 Octree::QEM(OctreeNode *node)
 void Octree::aggregate(OctreeNode *node)
 {
     OctreeChildren *children = node->pointer.children;
-    OctreeData *data = new OctreeData {glm::vec3(0.0f), 0}; // TODO: Correctly initialize this
+    OctreeData *data = new OctreeData {glm::vec3(0.0f), 0};
     node->pointer.data = data;
     node->is_leaf = true;
     for (int i = 0; i < children->node.size(); ++i)

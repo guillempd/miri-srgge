@@ -20,6 +20,7 @@ enum SimplificationMethod
     THIN_FEATURE
 };
 
+// Compute the supporting plane of a triangle given its three vertices
 Plane face(const glm::vec3 &v0, const glm::vec3 &v1, const glm::vec3 &v2)
 {
     glm::vec3 u = v1 - v0;
@@ -36,7 +37,7 @@ void computeRepresentativesByVertices(const TriangleMesh &originalMesh, Octree &
     for (int i = 0; i < originalMesh.vertices.size(); ++i)
     {
         glm::vec3 v = originalMesh.vertices[i];
-        representative[i] = octree.insert(v, Plane(0, 0, 0, 0)); // FIXME: Inserting dummy face
+        representative[i] = octree.insert(v, Plane(0, 0, 0, 0)); // Insert dummy plane, not needed since we are computing the lods using mean
     }
 }
 
@@ -81,8 +82,7 @@ void addVertices(const TriangleMesh &originalMesh, TriangleMesh &simplifiedMesh,
     }
 }
 
-// TODO: Add const to originalToSimplifiedMesh
-void addFaces(const TriangleMesh &originalMesh, TriangleMesh &simplifiedMesh, std::unordered_map<int, int> &originalToSimplifiedIndex)
+void addFaces(const TriangleMesh &originalMesh, TriangleMesh &simplifiedMesh, const std::unordered_map<int, int> &originalToSimplifiedIndex)
 {
     std::unordered_set<glm::ivec3> simplifiedMeshTriangles;
     for (int i = 0; i < originalMesh.triangles.size(); i += 3)
@@ -91,9 +91,9 @@ void addFaces(const TriangleMesh &originalMesh, TriangleMesh &simplifiedMesh, st
         int i1 = originalMesh.triangles[i + 1];
         int i2 = originalMesh.triangles[i + 2];
 
-        int j0 = originalToSimplifiedIndex[i0];
-        int j1 = originalToSimplifiedIndex[i1];
-        int j2 = originalToSimplifiedIndex[i2];
+        int j0 = originalToSimplifiedIndex.find(i0)->second;
+        int j1 = originalToSimplifiedIndex.find(i1)->second;
+        int j2 = originalToSimplifiedIndex.find(i2)->second;
 
         // Skip face if it collapsed to an edge or point
         if (j0 == j1) continue;
@@ -239,8 +239,8 @@ int main(int argc, char **argv)
     if (PLYReader::readMesh(mesh_filename, mesh))
     {
         std::vector<TriangleMesh> LOD = SimplifyMesh(mesh, method, max_depth, lods);
-        for (int i = 0; i < LOD.size(); ++i)
-            PLYWriter::writeMesh("test" + std::to_string(i) + ".ply", LOD[i]); // TODO: Change generated names
+        for (int i = 0; i < lods; ++i)
+            PLYWriter::writeMesh(std::to_string(lods - i - 1) + ".ply", LOD[i]);
     }
     else
     {

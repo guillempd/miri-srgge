@@ -59,15 +59,13 @@ private:
     ShaderProgram basicProgram;
 
     // Time critical rendering data
-    // TODO: Actually measure TPS
-    float TPS = 1e6;
-    float FPS = 60.0f;
+    float TPS;
+    float FPS;
 
     // Visibility data
-    // TODO: Initialize
     std::vector<Statue> PVS;
     std::vector<std::vector<std::vector<glm::ivec2>>> visibleFrom; // visibility[x][y] is a list of the positions visible from (x,y), only store those with statues (walls are always rendered)
-    std::vector<std::vector<int>> floorPlan; // map[x][y] is the index to the model occupying position (x,y) TODO: maybe change by char
+    std::vector<std::vector<int>> floorPlan; // map[x][y] is the index to the model occupying position (x,y)
 
     // Other data
     float currentTime;

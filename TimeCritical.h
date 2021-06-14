@@ -5,10 +5,10 @@
 #include <array>
 
 // lod -> subdivision level
-// 0 -> 8
-// 1 -> 7
-// 2 -> 6
-// 3 -> 5
+// 0 -> 5
+// 1 -> 6
+// 2 -> 7
+// 3 -> 8
 struct MeshLods
 {
     std::array<TriangleMesh, 4> lods;

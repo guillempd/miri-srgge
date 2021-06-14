@@ -47,7 +47,7 @@ public:
     Octree(AABB aabb, int max_depth_);
     ~Octree();
     OctreeNode* insert(const glm::vec3 &vertex, const Plane &face);
-    static glm::vec3 average(OctreeNode *node); // TODO: Make non-static (?)
+    static glm::vec3 average(OctreeNode *node);
     static glm::vec3 QEM(OctreeNode *node);
 
 private:
