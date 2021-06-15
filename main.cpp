@@ -18,7 +18,7 @@
 #define GLUT_SCROLL_UP      0x0003
 #define GLUT_SCROLL_DOWN    0x0004
 
-std::string DEFAULT_SCENE = "test";
+std::string DEFAULT_SCENE = "scenes/test";
 
 static int prevTime;
 static bool capturingMouse;

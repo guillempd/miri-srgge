@@ -46,7 +46,7 @@ The first two are user generated and the third has to be generated using the Vis
 
 All of them should have matching names.
 
-One complete example of each of them is provides as test.tm, test.m and test.v
+One complete example of each of them is provides under the directory scenes.
 
 By default the BaseCode reads these three, a command line argument can be passed to load other museum files. For example: ./BaseCode my_museum
 ### Models File Structure (*.m)
