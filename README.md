@@ -4,6 +4,10 @@
 This project consists on a 3D renderer that allows to view a museum with several statues (3D models) of varying complexity.
 With the goal of achieving a high performance, several optimization strategies such as LODs, time critical rendering and visibility precomputation are used. See [here](#key-optimizationfeatures-implemented) for more details.
 
+## Demo Video
+
+https://user-images.githubusercontent.com/15831136/138288925-8e7f39f7-91f7-4983-811c-9e9d565d0251.mp4
+
 ## Building the project
 
 The project is provided as a CMake project. In order to build it (Linux) execute the following commands at the root directory (where the `CMakeLists.txt` file is located):
